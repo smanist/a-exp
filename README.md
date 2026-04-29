@@ -12,6 +12,8 @@ a-exp is a small repository interface for recurring AI research sessions. It kee
 
 It is not a large framework. The repo is the interface: agents read and update plain-text files, then use the scheduler and experiment tooling when work needs to run.
 
+a-exp is based on a heavily modified and trimmed fork from [openakari](https://github.com/victoriacity/openakari).
+
 ## Quick Start
 
 ```bash
