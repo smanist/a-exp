@@ -6,14 +6,14 @@ import { describe, expect, it } from "vitest";
 import { computeNextRunAtMs } from "./schedule.js";
 import { JobStore } from "./store.js";
 
-describe("OpenAkari core scheduler", () => {
+describe("a-exp core scheduler", () => {
   it("computes future interval schedules", () => {
     const next = computeNextRunAtMs({ kind: "every", everyMs: 60_000, anchorMs: 1_000 }, 61_000);
     expect(next).toBe(121_000);
   });
 
   it("persists jobs with repo-local state", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "akari-store-"));
+    const dir = await mkdtemp(join(tmpdir(), "a-exp-store-"));
     try {
       const path = join(dir, "jobs.json");
       const store = new JobStore(path);

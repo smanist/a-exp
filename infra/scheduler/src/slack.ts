@@ -1,5 +1,5 @@
 /**
- * Slack integration for the openakari scheduler.
+ * Slack integration for the a-exp scheduler.
  *
  * MVP scope:
  * - DM-only
@@ -15,8 +15,8 @@ import { getPendingApprovals, type ApprovalItem } from "./notify.js";
 import type { ExecutionResult } from "./executor.js";
 import type { Job } from "./types.js";
 
-export type AkariCommandInput = Record<string, unknown>;
-export type AkariCommandResult = {
+export type AExpCommandInput = Record<string, unknown>;
+export type AExpCommandResult = {
   ok: boolean;
   response: string;
 };
@@ -165,7 +165,7 @@ function buildDmPrompt(
   threadTranscript?: string,
 ): string {
   const parts = [
-    "You are Akari, responding in a Slack DM to the designated operator.",
+    "You are a-exp, responding in a Slack DM to the designated operator.",
     `Repository root: ${repoDir}`,
     "This is the write-capable operator interface. You may use normal mutating tools when needed.",
     "Keep replies concise, plain-text, and Slack-friendly.",
@@ -419,8 +419,8 @@ export function startupMessage(): string {
   return "Scheduler started. Slack DM interface is ready for the designated operator.";
 }
 
-export async function handleAkariCommand(_input: AkariCommandInput): Promise<AkariCommandResult> {
-  unsupported("handleAkariCommand");
+export async function handleAExpCommand(_input: AExpCommandInput): Promise<AExpCommandResult> {
+  unsupported("handleAExpCommand");
   return { ok: false, response: "Slash commands are not available in the DM-only Slack MVP." };
 }
 
@@ -514,7 +514,7 @@ export function formatThreadMessages(
     if (!text) continue;
 
     const ts = msg.ts ? new Date(parseFloat(msg.ts) * 1000).toISOString().slice(11, 19) : "??:??";
-    const sender = msg.bot_id ? "Akari" : msg.user && msg.user === humanUserId ? "Operator" : "User";
+    const sender = msg.bot_id ? "a-exp" : msg.user && msg.user === humanUserId ? "Operator" : "User";
     const truncated = text.length > 1000 ? text.slice(0, 1000) + "..." : text;
     lines.push(`[${ts}] ${sender}: ${truncated}`);
   }

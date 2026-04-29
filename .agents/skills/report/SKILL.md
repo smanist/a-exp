@@ -9,7 +9,7 @@ argument-hint: "<type> [project=<name>] [from=YYYY-MM-DD] [to=YYYY-MM-DD]"
 
 # /report <type> [options]
 
-Generate a formatted report with charts from akari's data sources.
+Generate a formatted report with charts from a-exp's data sources.
 
 ## Report types
 

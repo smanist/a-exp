@@ -1,4 +1,4 @@
-# Slack App Manifest for the active DM-only Akari scheduler integration.
+# Slack App Manifest for the active DM-only a-exp scheduler integration.
 # Import via https://api.slack.com/apps -> "Create New App" -> "From a manifest".
 #
 # After import:
@@ -7,13 +7,13 @@
 # 3. Install the app to your workspace
 
 display_information:
-  name: Akari
-  description: Akari scheduler DM operator interface
+  name: a-exp
+  description: a-exp scheduler DM operator interface
   background_color: "#2c2d30"
 
 features:
   bot_user:
-    display_name: Akari
+    display_name: a-exp
     always_online: true
 
 oauth_config:

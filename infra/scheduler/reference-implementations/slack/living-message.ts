@@ -19,7 +19,7 @@ export interface LivingMessage {
   maxTurns: number | null;
   startTimeMs: number;
   costUsd: number;
-  lastTool: string; // e.g., "Read projects/akari/README.md"
+  lastTool: string; // e.g., "Read projects/a-exp/README.md"
   lastActivity: string; // e.g., "reading project files..."
   workSummary: string; // commit summary shown in completion state
 }

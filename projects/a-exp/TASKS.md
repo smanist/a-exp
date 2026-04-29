@@ -1,4 +1,4 @@
-# akari - Next actions
+# a-exp - Next actions
 
 - [ ] Finish scheduler surface reduction
   Why: The repo trim removes obsolete docs/projects first, but scheduler internals still need final pruning to match the retained public commands and Slack/report paths.

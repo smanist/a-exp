@@ -51,7 +51,7 @@ SECTIONS_BY_TYPE_STATUS: dict[str, dict[str, set[str]]] = {
     },
 }
 
-# Known pattern slugs (must match filenames in projects/akari/patterns/)
+# Known pattern slugs (must match filenames in projects/a-exp/patterns/)
 VALID_PATTERN_SLUGS = {
     "autonomous-execution",
     "gravity-driven-migration",
@@ -72,7 +72,7 @@ SKIP_DIRS = {
 
 
 def is_repo_root(path: Path) -> bool:
-    """Return True when the directory looks like the openakari repo root."""
+    """Return True when the directory looks like the a-exp repo root."""
     return (path / "AGENTS.md").exists() or (path / ".git").exists()
 
 

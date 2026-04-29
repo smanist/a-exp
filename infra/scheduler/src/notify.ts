@@ -282,7 +282,7 @@ export function buildSessionBlocks(
   const blocks: Record<string, unknown>[] = [
     {
       type: "header",
-      text: { type: "plain_text", text: `${emoji} Akari session: ${status}` },
+      text: { type: "plain_text", text: `${emoji} a-exp session: ${status}` },
     },
     {
       type: "section",
@@ -538,7 +538,7 @@ export function buildApprovalBlocks(approvals: ApprovalItem[]): Record<string, u
   return [
     {
       type: "header",
-      text: { type: "plain_text", text: ":inbox_tray: Akari: approvals waiting" },
+      text: { type: "plain_text", text: ":inbox_tray: a-exp: approvals waiting" },
     },
     {
       type: "section",

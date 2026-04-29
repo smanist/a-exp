@@ -7,7 +7,7 @@ import { readBudgets } from "./data-budget.js";
 
 describe("lightweight budget reporting", () => {
   it("reads budget and ledger files without external audit tooling", async () => {
-    const repo = await mkdtemp(join(tmpdir(), "akari-budget-"));
+    const repo = await mkdtemp(join(tmpdir(), "a-exp-budget-"));
     try {
       const project = join(repo, "projects", "demo");
       await mkdir(project, { recursive: true });

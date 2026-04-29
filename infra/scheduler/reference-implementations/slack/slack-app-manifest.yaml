@@ -1,4 +1,4 @@
-# Slack App Manifest for the Akari scheduler bot.
+# Slack App Manifest for the a-exp scheduler bot.
 # Import this at https://api.slack.com/apps → "Create New App" → "From a manifest"
 # or update an existing app via "App Manifest" in the sidebar.
 #
@@ -7,7 +7,7 @@
 # Then generate an App-Level Token with `connections:write` scope.
 
 display_information:
-  name: Akari
+  name: a-exp
   description: Autonomous research group assistant
   background_color: "#2c2d30"
 
@@ -17,11 +17,11 @@ features:
     messages_tab_enabled: false
     messages_tab_read_only_enabled: false
   bot_user:
-    display_name: Akari
+    display_name: a-exp
     always_online: true
   slash_commands:
-    - command: /akari
-      description: Manage Akari channels and configuration
+    - command: /a-exp
+      description: Manage a-exp channels and configuration
       usage_hint: "[channel-mode dev|chat|remove] [status]"
       should_escape: false
 
@@ -34,7 +34,7 @@ oauth_config:
       - im:write            # Open DM conversations (notifications)
       - reactions:write     # Add/remove emoji reactions (acknowledgment)
       - users:read          # Look up user display names
-      - commands            # /akari slash command
+      - commands            # /a-exp slash command
 
       # --- Channel support (ADR 0033) ---
       - app_mentions:read   # Receive @mention events in channels

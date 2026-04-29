@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** CLI for the trimmed OpenAkari scheduler. */
+/** CLI for the trimmed a-exp scheduler. */
 
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -59,7 +59,7 @@ import {
 import type { Job, JobCreate, Schedule } from "./types.js";
 
 const HELP = `
-akari — Cron scheduler for OpenAkari Core
+a-exp — Cron scheduler for a-exp Core
 
 Commands:
   start                     Run the scheduler daemon
@@ -126,14 +126,14 @@ function parseOptions(args: string[]): Record<string, string | true> {
 
 function defaultWorkCyclePrompt(): string {
   return [
-    "Run one OpenAkari work cycle.",
+    "Run one a-exp work cycle.",
     "Read AGENTS.md, inspect project README/TASKS files, select one actionable task, execute it, update project memory, verify, and commit the completed logical unit.",
   ].join("\n");
 }
 
 function projectWorkCyclePrompt(project: string): string {
   return [
-    `Run one OpenAkari work cycle scoped to projects/${project}.`,
+    `Run one a-exp work cycle scoped to projects/${project}.`,
     "Read the project README and TASKS, select one actionable task, execute it, update project memory, verify, and commit the completed logical unit.",
   ].join("\n");
 }

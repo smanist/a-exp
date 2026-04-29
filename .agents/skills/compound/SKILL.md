@@ -18,7 +18,7 @@ Compound engineering phase — turns session work into accumulated system advant
 - `/compound deep` — 10-15 min, full procedure with deep-mode scope
 - `/compound` (no argument) — auto-detect: scheduler injects directive to use fast if full ran <3h ago; otherwise run full
 
-**Rationale:** 83% of sessions produce zero compound actions. Fast saves ~$5.40/day by skipping redundant cross-session scans. See `projects/akari/analysis/compound-step-overhead-analysis.md`.
+**Rationale:** 83% of sessions produce zero compound actions. Fast saves ~$5.40/day by skipping redundant cross-session scans. See `projects/a-exp/analysis/compound-step-overhead-analysis.md`.
 
 ## Fast compound
 
@@ -52,7 +52,7 @@ The standard compound procedure. Runs when auto-detection determines a full scan
 
 ## Background
 
-Compound engineering turns individual session work into accumulated system advantage. The compound phase embeds learnings from each task into conventions, skills, and patterns — transforming linear progress into exponential improvement. See `projects/akari/analysis/ralph-loop-architecture-analysis.md` for the underlying pattern.
+Compound engineering turns individual session work into accumulated system advantage. The compound phase embeds learnings from each task into conventions, skills, and patterns — transforming linear progress into exponential improvement. See `projects/a-exp/analysis/ralph-loop-architecture-analysis.md` for the underlying pattern.
 
 ## Principles
 
@@ -99,7 +99,7 @@ Search recent files for "Recommendations", "Prevention", "Proposal", "Migration"
 ```
 projects/*/diagnosis/diagnosis-*.md, projects/*/postmortem/postmortem-*.md
 projects/*/experiments/*/EXPERIMENT.md (status: completed in last N days)
-projects/akari/feedback/*.md, projects/akari/analysis/*.md, projects/akari/architecture/*.md
+projects/a-exp/feedback/*.md, projects/a-exp/analysis/*.md, projects/a-exp/architecture/*.md
 decisions/*.md (with Migration or Consequences action items)
 ```
 
@@ -263,7 +263,7 @@ In deep mode, check whether any active project has accumulated enough experiment
 
 4. If a project already has `knowledge.md` and <5 new experiments since last update, skip it.
 
-**Rationale:** Domain knowledge accumulates across experiments but doesn't naturally consolidate. After 10+ experiments, searching individual records becomes impractical. Periodic synthesis into `knowledge.md` files provides the same benefit as review papers — making accumulated knowledge accessible without reading every source. See `projects/akari/feedback/feedback-domain-knowledge-consolidation.md`.
+**Rationale:** Domain knowledge accumulates across experiments but doesn't naturally consolidate. After 10+ experiments, searching individual records becomes impractical. Periodic synthesis into `knowledge.md` files provides the same benefit as review papers — making accumulated knowledge accessible without reading every source. See `projects/a-exp/feedback/feedback-domain-knowledge-consolidation.md`.
 
 ### Step 8: Check artifact complexity (deep mode only)
 
@@ -291,7 +291,7 @@ For each artifact exceeding threshold: check TASKS.md for existing simplificatio
 
 ### Step 9: Fleet output audit (full/deep only)
 
-Audit recent fleet worker sessions against `projects/akari/plans/fleet-quality-audit-checklist.md`.
+Audit recent fleet worker sessions against `projects/a-exp/plans/fleet-quality-audit-checklist.md`.
 
 1. **Identify fleet sessions**: Read `.scheduler/metrics/sessions.jsonl` for `triggerSource: "fleet"` entries — last 24h (full) or 48h (deep).
 2. **Automated checks (D2-D8)**: Read each session's `verification` object. Flag sessions with: `hasCommit: false` (D3), `hasLogEntry: false` (D2), `ledgerConsistent: false` (D7), `l2ViolationCount > 0` (D4). Fire-and-forget (D8) is already L0-enforced.

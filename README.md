@@ -1,6 +1,6 @@
-# OpenAkari Core
+# a-exp Core
 
-OpenAkari is a small repository interface for recurring AI research sessions. It keeps the parts that make agents useful over time:
+a-exp is a small repository interface for recurring AI research sessions. It keeps the parts that make agents useful over time:
 
 - cron-style scheduled sessions
 - Slack operator interface
@@ -20,8 +20,8 @@ npm install
 npm run build
 cd ../..
 
-./akari add --name "work-cycle" --cron "0 * * * *" --message-default --model gpt-5.2
-./akari start
+./a-exp add --name "work-cycle" --cron "0 * * * *" --message-default --model gpt-5.2
+./a-exp start
 ```
 
 Slack is optional. Configure these variables to enable it:
@@ -40,7 +40,7 @@ SLACK_USER_ID=...
 | `infra/scheduler/` | Cron scheduler, session launch, Slack, status, reports |
 | `infra/experiment-runner/` | Fire-and-forget experiment execution with artifacts |
 | `infra/experiment-validator/` | Experiment record validation |
-| `projects/akari/` | Support project for maintaining OpenAkari itself |
+| `projects/a-exp/` | Support project for maintaining a-exp itself |
 | `examples/my-research-project/` | Minimal project scaffold |
 | `docs/schemas/` | File schemas for tasks, logs, budgets, experiments |
 | `docs/conventions/` | Retained conventions for memory, tasks, artifacts, provenance |
@@ -64,24 +64,24 @@ Project directories hold memory and coordination. Module directories hold code a
 
 ## Scheduler
 
-The `./akari` wrapper points at the scheduler CLI. Retained commands are:
+The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 
 ```bash
-./akari start
-./akari stop
-./akari add --name work-cycle --cron "0 * * * *" --message-default
-./akari list
-./akari run <job-id>
-./akari status
-./akari heartbeat
-./akari check-health --notify
+./a-exp start
+./a-exp stop
+./a-exp add --name work-cycle --cron "0 * * * *" --message-default
+./a-exp list
+./a-exp run <job-id>
+./a-exp status
+./a-exp heartbeat
+./a-exp check-health --notify
 ```
 
 Reports are generated with:
 
 ```bash
 cd infra/scheduler
-npx tsx src/report/run-report.ts --type project --project akari
+npx tsx src/report/run-report.ts --type project --project a-exp
 ```
 
 ## Budget Support

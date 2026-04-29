@@ -1,7 +1,7 @@
 entries:
-  - project: akari
-    module: akari
-    path: modules/akari
+  - project: a-exp
+    module: a-exp
+    path: modules/a-exp
     type: local-scratch
   - project: my-research-project
     module: my-research-project

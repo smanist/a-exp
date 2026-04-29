@@ -1,4 +1,4 @@
-/** Type definitions for the akari scheduler. Minimal extraction from OpenClaw cron types. */
+/** Type definitions for the a-exp scheduler. Minimal extraction from OpenClaw cron types. */
 
 import type { BackendCapability } from "./backend.js";
 

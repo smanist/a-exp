@@ -48,7 +48,7 @@ If a topic was provided, skip to Step 2. Otherwise, scan these sources:
 2. **Experiment recommendations** — Scan completed `EXPERIMENT.md` files for unactioned recommendations (Recommendations, Proposed solutions, Next steps) beyond current project scope.
 3. **Cross-session patterns** — Check `.scheduler/metrics/sessions.jsonl` for recurring operational issues.
 4. **Literature gaps** — Check `literature/synthesis.md` files for gaps between existing literature and current questions.
-5. **Roadmap gaps** — Read `docs/roadmap.md` and `projects/akari/plans/long-term-roadmap.md` for capability gaps.
+5. **Roadmap gaps** — Read `docs/roadmap.md` and `projects/a-exp/plans/long-term-roadmap.md` for capability gaps.
 
 Select the single most promising candidate — strongest evidence and clearest path to actionable findings.
 
@@ -82,7 +82,7 @@ State your assessment explicitly. If the gap is better handled as a task, write 
 
 ### Step 4: Write the proposal
 
-Save to `projects/akari/proposals/<slug>.md`:
+Save to `projects/a-exp/proposals/<slug>.md`:
 
 ```markdown
 # Project Proposal: <Title>
@@ -131,9 +131,9 @@ Follow `docs/sops/commit-workflow.md`. Commit message: `project propose: <title>
 Add an entry to `APPROVAL_QUEUE.md` under Pending:
 ```
 ### YYYY-MM-DD — New project proposal: <title>
-Project: akari
+Project: a-exp
 Type: structural
-Request: Activate new research project based on proposal at `projects/akari/proposals/<slug>.md`
+Request: Activate new research project based on proposal at `projects/a-exp/proposals/<slug>.md`
 Context: <1-2 sentence summary of gap evidence>
 ```
 
@@ -220,7 +220,7 @@ Ask clarifying questions to fill gaps. Adapt to what the description already cov
 
 Before creating the project:
 1. Read all `projects/*/README.md` — check for mission overlap
-2. Check `projects/akari/proposals/` for pending proposals on the same topic
+2. Check `projects/a-exp/proposals/` for pending proposals on the same topic
 3. If overlap exists: "This overlaps with `<project>` which has mission: `<mission>`. New project or tasks within existing one?"
 
 Wait for response before proceeding.
@@ -301,9 +301,9 @@ Wait for confirmation. Apply changes if requested.
 
 Follow `docs/sops/commit-workflow.md`. Commit message: `project scaffold: <title>`
 
-### Step 8: Log in akari project
+### Step 8: Log in a-exp project
 
-Add a log entry to `projects/akari/README.md`:
+Add a log entry to `projects/a-exp/README.md`:
 ```markdown
 ### YYYY-MM-DD — New project: <title>
 

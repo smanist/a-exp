@@ -10,7 +10,7 @@ argument-hint: "[fast | full | project-name] — 'fast' for abbreviated orient, 
 
 # /orient
 
-You are starting or resuming a work session on the akari research group repo. Your job is to quickly build situational awareness and recommend the single highest-leverage next action.
+You are starting or resuming a work session on the a-exp research group repo. Your job is to quickly build situational awareness and recommend the single highest-leverage next action.
 
 ## Tier selection (ADR 0030)
 
@@ -73,7 +73,7 @@ This prevents projects from stalling when their task queue depletes while missio
 ### Select task
 Extract unblocked tasks from TASKS.md files. Apply project priority grouping first (`high` > `medium` | untagged > `low`, per ADR 0036), then apply the same task-level ranking criteria as full orient (prevents waste > unblocks > produces knowledge > matches momentum > cost-proportionate), but skip strategic alignment check, repetition penalty scan, and compound opportunity scanning.
 
-**Findings-first gate (akari intervention)**: Before final recommendation, evaluate the rolling non-zero-findings rate from Gather Context step 4. If the scheduler work-cycle rate is `< 30%`, enable the gate:
+**Findings-first gate (a-exp intervention)**: Before final recommendation, evaluate the rolling non-zero-findings rate from Gather Context step 4. If the scheduler work-cycle rate is `< 30%`, enable the gate:
 1. Prefer tasks whose Done-when explicitly requires a findings artifact (analysis/diagnosis with quantified results, or explicit `newExperimentFindings`/`logEntryFindings` output).
 2. If no existing unblocked task qualifies, generate one mission-gap task with a findings-producing Done-when before selecting.
 3. In the orient output, report `Findings-first gate: enabled` with the exact arithmetic (`x/N = y%`). If rate is `>= 30%`, report `disabled`.
@@ -146,7 +146,7 @@ Read the following in parallel:
 7. Cross-session patterns: Read `.scheduler/metrics/sessions.jsonl` (last 10 sessions, using `Read` with negative offset to avoid reading the entire file). Use the pattern detector (`infra/scheduler/src/patterns.ts`) logic to check for recurring violations: sessions without commits, zero-knowledge sessions, uncommitted files, missing log entries, timeouts, or cost anomalies. A pattern requires 3+ occurrences in the last 10 sessions. Report any detected patterns in the "Cross-session patterns" section of the output.
 8. Model-fit awareness: If candidate tasks depend on model-specific behavior, flag uncertainty and recommend an empirical check rather than assuming capability.
 9. Horizon-scan intel: Check `.scheduler/skill-reports/horizon-scan-*.md` for recent scan reports (last 14 days). If any exist, read the most recent one and note: (a) actionable findings that created tasks or updated the model registry, (b) informative findings relevant to candidate tasks, (c) the scan date (to flag staleness if >14 days old). Report in the "Horizon-scan intel" section of the output. If no reports exist or all are >14 days old, note "No recent horizon-scan data."
-   10. **Efficiency summary**: From `.scheduler/metrics/sessions.jsonl` (reuse data from step 7), compute five metrics over the last 10 work-cycle sessions. Report concrete values with comparison to baselines (from `projects/akari/analysis/baseline-efficiency-report-2026-02-22.md`):
+   10. **Efficiency summary**: From `.scheduler/metrics/sessions.jsonl` (reuse data from step 7), compute five metrics over the last 10 work-cycle sessions. Report concrete values with comparison to baselines (from `projects/a-exp/analysis/baseline-efficiency-report-2026-02-22.md`):
      - **Findings/dollar** (primary KPI): `(sum of newExperimentFindings + logEntryFindings) / sum of costUsd`. Baseline: 1.29 f/$. Flag if <0.5 f/$.
      - **Genuine waste rate**: Count sessions where ALL `knowledge` fields sum to zero AND (`orphanedFiles` is 0 or absent) AND `filesChanged < 50`. Baseline: 6.3%. Flag if >10%.
      - **Orient overhead**: Mean `orientTurns / numTurns` for sessions with `numTurns > 10`. Baseline: 42%. Flag if >40%. This is the single largest efficiency lever per baseline report Finding 2.
@@ -226,7 +226,7 @@ Extract all unblocked tasks from `TASKS.md` files. For each task, assess:
 
 **Ranking algorithm:** Score each task by the first criterion it satisfies, in order. Criterion 1 (prevents waste) dominates criterion 2 (unblocks), which dominates criterion 3 (produces knowledge), etc. Within the same criterion, prefer lower cost.
 
-**Findings-first gate (akari intervention):** Apply this gate before final recommendation. If rolling scheduler work-cycle non-zero-findings rate (from Gather Context step 10) is `< 30%`, the selected task must have a findings-producing Done-when (explicit analysis/diagnosis findings or quantified finding output). If the top-ranked candidate does not satisfy this, choose the highest-ranked candidate that does; if none do, generate a mission-gap task that does and select it. Report gate state and arithmetic in the orientation output (`enabled: x/N = y%` or `disabled: x/N = y%`).
+**Findings-first gate (a-exp intervention):** Apply this gate before final recommendation. If rolling scheduler work-cycle non-zero-findings rate (from Gather Context step 10) is `< 30%`, the selected task must have a findings-producing Done-when (explicit analysis/diagnosis findings or quantified finding output). If the top-ranked candidate does not satisfy this, choose the highest-ranked candidate that does; if none do, generate a mission-gap task that does and select it. Report gate state and arithmetic in the orientation output (`enabled: x/N = y%` or `disabled: x/N = y%`).
 
 **Strategic alignment:** When recommending, state how the task connects to an active research question from `docs/roadmap.md`. If it doesn't connect to any, flag this as potential drift — it may still be valid (infrastructure work), but the disconnect should be explicit.
 
@@ -253,7 +253,7 @@ Do NOT recommend tasks from:
 2. If unsurfaced files exist, recommend: "Run `/compound deep` to process N unsurfaced recommendation files" as the task. Include the file count and list in the output.
 3. If no unsurfaced files exist either, log "no actionable tasks and no unsurfaced recommendations" and end the session.
 
-This fallback converts empty-queue situations into productive discovery sessions. See [projects/akari/analysis/task-discovery-workflow-gap-2026-02-22.md](../../../projects/akari/analysis/task-discovery-workflow-gap-2026-02-22.md) R4.
+This fallback converts empty-queue situations into productive discovery sessions. See [projects/a-exp/analysis/task-discovery-workflow-gap-2026-02-22.md](../../../projects/a-exp/analysis/task-discovery-workflow-gap-2026-02-22.md) R4.
 
 ## Task supply generation and decomposition (ADR 0047, ADR 0053)
 

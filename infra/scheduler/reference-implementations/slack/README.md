@@ -17,4 +17,4 @@ cd infra/scheduler
 npm run test:slack-reference
 ```
 
-Workspace-specific tokens, app review, and product policy are still deployment responsibilities. Fleet execution is not part of OpenAkari Core; fleet-related Slack status functions degrade to explanatory placeholders.
+Workspace-specific tokens, app review, and product policy are still deployment responsibilities. Fleet execution is not part of a-exp Core; fleet-related Slack status functions degrade to explanatory placeholders.

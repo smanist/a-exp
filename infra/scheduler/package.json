@@ -1,10 +1,10 @@
 {
-  "name": "@akari/scheduler",
+  "name": "@a-exp/scheduler",
   "version": "0.1.0",
-  "description": "Minimal cron scheduler for akari autonomous agent sessions",
+  "description": "Minimal cron scheduler for a-exp autonomous agent sessions",
   "type": "module",
   "bin": {
-    "akari": "./dist/cli.js"
+    "a-exp": "./dist/cli.js"
   },
   "scripts": {
     "build": "npx tsc",

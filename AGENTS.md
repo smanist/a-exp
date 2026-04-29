@@ -1,10 +1,10 @@
 # AGENTS.md
 
-This repo is the trimmed OpenAkari core: a small, file-based operating system for recurring agent research sessions.
+This repo is the trimmed a-exp core: a small, file-based operating system for recurring agent research sessions.
 
 ## What To Preserve
 
-OpenAkari now keeps only these responsibilities:
+a-exp now keeps only these responsibilities:
 
 - scheduled agent sessions through `infra/scheduler/`
 - Slack operator interface and notifications
@@ -80,7 +80,7 @@ Keep heavy outputs under `modules/<module>/artifacts/`, not under `projects/`.
 
 ## Scheduler And Slack
 
-The public scheduler entrypoint is `./akari`.
+The public scheduler entrypoint is `./a-exp`.
 
 Retained commands:
 

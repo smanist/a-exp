@@ -1,13 +1,13 @@
-# akari
+# a-exp
 
 Status: active
 Priority: high
-Mission: Maintain the trimmed OpenAkari core as a small, runnable agent research scaffold.
+Mission: Maintain the trimmed a-exp core as a small, runnable agent research scaffold.
 Done when: Scheduler, Slack, project memory, reports, budgets, and experiment tooling remain understandable and verified.
 
 ## Context
 
-This support project tracks work on OpenAkari itself. The repo was trimmed to keep only the components the user identified as necessary:
+This support project tracks work on a-exp itself. The repo was trimmed to keep only the components the user identified as necessary:
 
 - cron scheduler
 - project creation with decomposed tasks
@@ -22,6 +22,28 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-04-29 (Renamed previous identity to a-exp)
+
+Renamed the remaining previous project identity, module, CLI wrapper, scheduler package/bin metadata, Slack command examples, docs, tracked skills, and support paths to `a-exp`.
+
+Verification:
+- `rg -n --hidden -g '!.git' -i "a[k]ari"`: no matches.
+- `find . -path ./.git -prune -o -iname '*a[k]ari*' -print`: no matches.
+- `cd infra/scheduler && npm run build`: passed after installing declared scheduler dependencies with `npm install --no-package-lock`.
+- `cd infra/scheduler && npm test`: passed, 2 files and 3 tests.
+- `python -m pytest infra/experiment-runner infra/experiment-validator`: passed, 232 tests.
+- `./a-exp`: printed the renamed scheduler CLI help.
+
+Files:
+- `a-exp`
+- `AGENTS.md`
+- `README.md`
+- `.agents/skills/`
+- `docs/`
+- `infra/`
+- `modules/a-exp/`
+- `projects/a-exp/`
+
 ### 2026-04-29 (Trimmed repo to core surface)
 
 Implemented the core trim plan on the `trim` branch. Removed historical decision records, old project artifacts, the old sample research projects/modules, worker-pool reference code, heavy budget audit tooling, and non-core docs. Rewrote the top-level operating docs and this support project around the retained runtime: scheduler, Slack, project memory, reports, lightweight budgets, and experiment tooling.
@@ -35,7 +57,7 @@ Files:
 - `AGENTS.md`
 - `README.md`
 - `docs/`
-- `projects/akari/`
+- `projects/a-exp/`
 
 ## Open questions
 

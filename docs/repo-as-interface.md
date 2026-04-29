@@ -1,6 +1,6 @@
 # Repo As Interface
 
-OpenAkari does not hide its operating model behind a large service API. The files are the interface.
+a-exp does not hide its operating model behind a large service API. The files are the interface.
 
 An agent should be able to:
 
@@ -8,7 +8,7 @@ An agent should be able to:
 2. Read a project's `README.md` and `TASKS.md`.
 3. Select or create a decomposed task.
 4. Update project memory as it works.
-5. Use `./akari` for scheduled sessions and status.
+5. Use `./a-exp` for scheduled sessions and status.
 6. Use experiment tooling for long-running work.
 
 ## Why Files

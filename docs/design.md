@@ -1,6 +1,6 @@
 # Design
 
-OpenAkari Core treats the repository as the durable memory for recurring agent sessions.
+a-exp Core treats the repository as the durable memory for recurring agent sessions.
 
 ## Premise
 

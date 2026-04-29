@@ -9,7 +9,7 @@ Usage:
     python run.py --watch-csv results/output.csv --total 165 <experiment_dir> <command...>
     python run.py --detach <experiment_dir> <command...>
 
-The experiment directory must exist and should follow the akari experiment
+The experiment directory must exist and should follow the a-exp experiment
 convention (contain EXPERIMENT.md). progress.json is written alongside it.
 """
 

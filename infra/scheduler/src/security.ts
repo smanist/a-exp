@@ -79,10 +79,10 @@ const BLOCKED_EXECUTABLES = new Set([
 
 /** Dangerous pm2 subcommands that would stop the scheduler itself. */
 const PM2_STOP_PATTERNS = [
-  /^pm2\s+stop\s+akari\b/i,
+  /^pm2\s+stop\s+a-exp\b/i,
   /^pm2\s+stop\s+--id\s+\d+/i,
   /^pm2\s+stop\s+all\b/i,
-  /^pm2\s+delete\s+akari\b/i,
+  /^pm2\s+delete\s+a-exp\b/i,
   /^pm2\s+delete\s+all\b/i,
 ];
 

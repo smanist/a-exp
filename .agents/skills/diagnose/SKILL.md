@@ -79,7 +79,7 @@ Based on the diagnosis, recommend concrete actions:
 
 If any root-cause hypothesis attributed to L1 (Model) is rated "high" plausibility, record it in the same turn.
 
-Openakari does not ship a shared model capability registry. Record model-specific limits in one of:
+a-exp does not ship a shared model capability registry. Record model-specific limits in one of:
 
 1. The relevant project README (as an open question or warning)
 2. The diagnosis itself (with evidence and mitigation)

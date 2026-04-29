@@ -1,20 +1,20 @@
-# OpenAkari Scheduler
+# a-exp Scheduler
 
 Minimal cron scheduler for recurring agent sessions, Slack notifications, status, and reports.
 
 ## Commands
 
 ```bash
-./akari start
-./akari stop
-./akari add --name work-cycle --cron "0 * * * *" --message-default --model gpt-5.2
-./akari list
-./akari run <job-id>
-./akari enable <job-id>
-./akari disable <job-id>
-./akari status
-./akari heartbeat
-./akari check-health --notify
+./a-exp start
+./a-exp stop
+./a-exp add --name work-cycle --cron "0 * * * *" --message-default --model gpt-5.2
+./a-exp list
+./a-exp run <job-id>
+./a-exp enable <job-id>
+./a-exp disable <job-id>
+./a-exp status
+./a-exp heartbeat
+./a-exp check-health --notify
 ```
 
 ## Build
@@ -61,7 +61,7 @@ Reports are generated from repo files and scheduler metrics:
 
 ```bash
 cd infra/scheduler
-npx tsx src/report/run-report.ts --type project --project akari
+npx tsx src/report/run-report.ts --type project --project a-exp
 ```
 
 Budget report data is lightweight: it reads `projects/*/budget.yaml` and `ledger.yaml` only.

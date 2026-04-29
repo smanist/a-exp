@@ -1,4 +1,4 @@
-/** Slack Bot for Akari scheduler. Socket Mode for multi-channel interaction.
+/** Slack Bot for a-exp scheduler. Socket Mode for multi-channel interaction.
  *  Supports DMs (designated user), dev-mode channels (full access), and chat-mode channels (read-only Q&A). */
 
 import { App, LogLevel } from "@slack/bolt";
@@ -554,10 +554,10 @@ export async function startSlackBot(opts: {
     await publishHomeTab(event.user);
   });
 
-  // Handle /akari slash command (ADR 0033)
-  app.command("/akari", async ({ command, ack, respond }) => {
+  // Handle /a-exp slash command (ADR 0033)
+  app.command("/a-exp", async ({ command, ack, respond }) => {
     await ack();
-    const result = await handleAkariCommand({
+    const result = await handleAExpCommand({
       text: command.text ?? "",
       userId: command.user_id,
       channelId: command.channel_id,
@@ -717,7 +717,7 @@ export const dmThreadImages = dmThreadFiles;
 /** Build the startup message text. Exported for testing. */
 export function startupMessage(opts: { totalJobs: number; enabledJobs: number; nextRun: string; model: string; runtime: string }): string {
   return (
-    `:rocket: *Akari scheduler started*\n` +
+    `:rocket: *a-exp scheduler started*\n` +
     `Model: ${opts.model}\n` +
     `Runtime: ${opts.runtime}\n` +
     `Jobs: ${opts.totalJobs} total, ${opts.enabledJobs} enabled\n` +
@@ -795,7 +795,7 @@ export async function notifySessionComplete(
            (b.status.hoursToDeadline !== undefined && b.status.hoursToDeadline <= 24),
   ) ?? allBudgets[0] ?? null;
   const blocks = buildSessionBlocks(job, result, approvals, alertBudget?.status, alertBudget?.project, commitSummary);
-  const fallback = `Akari session ${result.ok ? "completed" : "failed"}: ${job.name}`;
+  const fallback = `a-exp session ${result.ok ? "completed" : "failed"}: ${job.name}`;
 
   if (threadTs) {
     const channel = await getDmChannel();
@@ -862,7 +862,7 @@ async function publishHomeTab(userId: string): Promise<void> {
   const nextMs = storeRef?.getNextWakeMs();
 
   const blocks = [
-    { type: "header", text: { type: "plain_text", text: "Akari scheduler" } },
+    { type: "header", text: { type: "plain_text", text: "a-exp scheduler" } },
     { type: "section", text: { type: "mrkdwn",
       text: `*Jobs:* ${jobs.length} total, ${enabled.length} enabled\n*Next run:* ${nextMs ? new Date(nextMs).toISOString() : "none"}\n*Pending approvals:* ${approvals.length}`,
     }},
@@ -878,36 +878,36 @@ async function publishHomeTab(userId: string): Promise<void> {
   });
 }
 
-// --- /akari slash command handler (ADR 0033) ---
+// --- /a-exp slash command handler (ADR 0033) ---
 
-export interface AkariCommandInput {
+export interface AExpCommandInput {
   text: string;
   userId: string;
   channelId: string;
 }
 
-export interface AkariCommandResult {
+export interface AExpCommandResult {
   text: string;
 }
 
-/** Parse and execute /akari slash commands. Exported for testing. */
-export async function handleAkariCommand(input: AkariCommandInput): Promise<AkariCommandResult> {
+/** Parse and execute /a-exp slash commands. Exported for testing. */
+export async function handleAExpCommand(input: AExpCommandInput): Promise<AExpCommandResult> {
   const args = input.text.trim().split(/\s+/);
   const subcommand = args[0]?.toLowerCase();
 
   if (!subcommand || subcommand === "help") {
     return {
       text:
-        `:bulb: */akari* commands:\n` +
-        `• \`/akari mode dev\` — set this channel to dev mode (full access)\n` +
-        `• \`/akari mode chat\` — set this channel to chat mode (read-only Q&A)\n` +
-        `• \`/akari mode off\` — remove this channel from Akari\n` +
-        `• \`/akari max-turns N\` — limit bot replies per thread to N turns\n` +
-        `• \`/akari max-turns off\` — remove the turn limit\n` +
-        `• \`/akari model <name>\` — set the preferred chat/deep-work model\n` +
-        `• \`/akari model reset\` — reset to default model routing\n` +
-        `• \`/akari status\` — show this channel's current mode and model\n` +
-        `• \`/akari help\` — this message\n\n` +
+        `:bulb: */a-exp* commands:\n` +
+        `• \`/a-exp mode dev\` — set this channel to dev mode (full access)\n` +
+        `• \`/a-exp mode chat\` — set this channel to chat mode (read-only Q&A)\n` +
+        `• \`/a-exp mode off\` — remove this channel from a-exp\n` +
+        `• \`/a-exp max-turns N\` — limit bot replies per thread to N turns\n` +
+        `• \`/a-exp max-turns off\` — remove the turn limit\n` +
+        `• \`/a-exp model <name>\` — set the preferred chat/deep-work model\n` +
+        `• \`/a-exp model reset\` — reset to default model routing\n` +
+        `• \`/a-exp status\` — show this channel's current mode and model\n` +
+        `• \`/a-exp help\` — this message\n\n` +
         `*Thread commands* (type in-thread or @mention):\n` +
         `• \`active on\` — respond to all messages in this thread\n` +
         `• \`active off\` — respond only to @mentions (default)`,
@@ -916,7 +916,7 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
 
   if (subcommand === "max-turns") {
     if (!isDesignatedUser(input.userId)) {
-      return { text: `:no_entry: Only the designated Akari operator can change turn limits.` };
+      return { text: `:no_entry: Only the designated a-exp operator can change turn limits.` };
     }
 
     const valueArg = args[1]?.toLowerCase();
@@ -925,7 +925,7 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
       if (current !== null) {
         return { text: `:information_source: This channel has a *${current}-turn* limit per thread.` };
       }
-      return { text: `:information_source: No turn limit set for this channel. Use \`/akari max-turns N\` to set one.` };
+      return { text: `:information_source: No turn limit set for this channel. Use \`/a-exp max-turns N\` to set one.` };
     }
 
     if (valueArg === "off" || valueArg === "remove" || valueArg === "none") {
@@ -938,7 +938,7 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
 
     const n = parseInt(valueArg, 10);
     if (isNaN(n) || n <= 0) {
-      return { text: `:warning: Invalid turn limit \`${valueArg}\`. Provide a positive number (e.g., \`/akari max-turns 10\`).` };
+      return { text: `:warning: Invalid turn limit \`${valueArg}\`. Provide a positive number (e.g., \`/a-exp max-turns 10\`).` };
     }
 
     setMaxTurns(input.channelId, n);
@@ -957,12 +957,12 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
     if (mode) {
       return { text: `:information_source: This channel is in *${mode}* mode.${turnsInfo}${modelInfo}` };
     }
-    return { text: `:information_source: This channel has no mode configured.${turnsInfo}${modelInfo} Use \`/akari mode dev\` or \`/akari mode chat\` to set one.` };
+    return { text: `:information_source: This channel has no mode configured.${turnsInfo}${modelInfo} Use \`/a-exp mode dev\` or \`/a-exp mode chat\` to set one.` };
   }
 
   if (subcommand === "model") {
     if (!isDesignatedUser(input.userId)) {
-      return { text: `:no_entry: Only the designated Akari operator can change the preferred model.` };
+      return { text: `:no_entry: Only the designated a-exp operator can change the preferred model.` };
     }
 
     const modelArg = args.slice(1).join(" ").trim();
@@ -970,9 +970,9 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
       const current = getModelPreference();
       const runtime = getEffectiveBackendName({ model: current ?? undefined });
       if (current) {
-        return { text: `:information_source: Current model: *${current}* (persisted). Runtime resolves to *${runtime}*. Use \`/akari model <name>\` to change it.` };
+        return { text: `:information_source: Current model: *${current}* (persisted). Runtime resolves to *${runtime}*. Use \`/a-exp model <name>\` to change it.` };
       }
-      return { text: `:information_source: Current model: *default* (profile-driven). Runtime resolves to *${runtime}*. Use \`/akari model <name>\` to persist a preference.` };
+      return { text: `:information_source: Current model: *default* (profile-driven). Runtime resolves to *${runtime}*. Use \`/a-exp model <name>\` to persist a preference.` };
     }
 
     if (modelArg === "reset" || modelArg === "default" || modelArg === "clear") {
@@ -987,7 +987,7 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
 
   if (subcommand === "mode") {
     if (!isDesignatedUser(input.userId)) {
-      return { text: `:no_entry: Only the designated Akari operator can change channel modes.` };
+      return { text: `:no_entry: Only the designated a-exp operator can change channel modes.` };
     }
 
     const modeArg = args[1]?.toLowerCase();
@@ -1002,7 +1002,7 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
     if (modeArg === "off" || modeArg === "remove" || modeArg === "none") {
       const removed = await removeChannelMode(input.channelId);
       if (removed) {
-        return { text: `:white_check_mark: Channel mode removed. Akari will no longer respond in this channel.` };
+        return { text: `:white_check_mark: Channel mode removed. a-exp will no longer respond in this channel.` };
       }
       return { text: `:information_source: This channel was not configured — nothing to remove.` };
     }
@@ -1010,7 +1010,7 @@ export async function handleAkariCommand(input: AkariCommandInput): Promise<Akar
     return { text: `:warning: Unknown mode \`${modeArg ?? ""}\`. Use \`dev\`, \`chat\`, or \`off\`.` };
   }
 
-  return { text: `:warning: Unknown command \`${subcommand}\`. Try \`/akari help\`.` };
+  return { text: `:warning: Unknown command \`${subcommand}\`. Try \`/a-exp help\`.` };
 }
 
 // --- Channel invitation restriction ---
@@ -1037,7 +1037,7 @@ export async function handleBotChannelJoin(
   try {
     await client.chat.postMessage({
       channel: event.channel,
-      text: "Thanks for the invite! However, only the Akari operator can add me to channels. Please ask them to invite me if you'd like me here.",
+      text: "Thanks for the invite! However, only the a-exp operator can add me to channels. Please ask them to invite me if you'd like me here.",
     });
   } catch {
     // Posting may fail if bot lacks permission — proceed to leave anyway
@@ -1059,7 +1059,7 @@ type SayFn = (msg: any) => Promise<any>;
 
 async function respondHelp(say: SayFn): Promise<void> {
   await say(
-    `:bulb: *Akari scheduler*\n\n` +
+    `:bulb: *a-exp scheduler*\n\n` +
     `Talk to me naturally — I can help with projects, experiments, approvals, sessions, and system status.\n\n` +
     `*Examples:*\n` +
     `"What's the status?" — system overview\n` +

@@ -13,7 +13,7 @@ export async function processMessage(
   _callbacks: ProcessMessageOpts = {},
   _opts: unknown = {},
 ): Promise<{ text: string } | { sessionId: string }> {
-  return { text: "Full Slack chat is a runnable reference in OpenAkari Core. Wire processMessage to your active chat runtime before using it in production." };
+  return { text: "Full Slack chat is a runnable reference in a-exp Core. Wire processMessage to your active chat runtime before using it in production." };
 }
 
 export function clearConversation(_convKey: string): void {
