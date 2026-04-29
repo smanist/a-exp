@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
+import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
 import { computeNextRunAtMs } from "./schedule.js";
 import { JobStore } from "./store.js";
@@ -126,6 +127,24 @@ describe("a-exp core scheduler", () => {
       setChannelModesPath(null);
       setModelPreferencePath(null);
       setLegacyBackendPreferencePath(null);
+    } finally {
+      await rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("reports daemon state from the workspace lockfile", async () => {
+    const { parent, repo } = await makeSiblingWorkspace("a-exp-daemon-");
+    try {
+      await initWorkspace(repo, "demo");
+      const paths = workspacePaths(repo);
+      const lockfile = join(paths.lockDir, "scheduler.pid");
+      expect(getDaemonStateFromLockfile(lockfile)).toBe("stopped");
+
+      await writeFile(lockfile, `${process.pid}\n`, "utf-8");
+      expect(getDaemonStateFromLockfile(lockfile)).toBe("running");
+
+      await writeFile(lockfile, "999999999\n", "utf-8");
+      expect(getDaemonStateFromLockfile(lockfile)).toBe("stopped");
     } finally {
       await rm(parent, { recursive: true, force: true });
     }

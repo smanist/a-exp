@@ -22,6 +22,20 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-04-29 (Fixed status daemon detection)
+
+Changed `a-exp status` to derive daemon state from the workspace `.a-exp/scheduler.pid` lockfile instead of always reporting `stopped`. The pid check now treats `EPERM` from `process.kill(pid, 0)` as evidence that the process exists.
+
+Verification:
+- `cd infra/scheduler && npm run build && npm test`: passed, 2 files and 9 tests.
+- `cd infra/scheduler && node dist/cli.js --repo /tmp/a-exp-status-test.DcClTJ/project-repo status` after writing PID `1` to `.a-exp/scheduler.pid`: reported `Daemon: running`.
+
+Files:
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/instance-guard.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-04-29 (Expanded init into a local workspace kit)
 
 Updated `a-exp init` for local distributed project repos. New project repos must now be parallel to an `a-exp/` checkout, and init creates `.agents -> ../a-exp/.agents` plus `docs -> ../a-exp/docs` so skills and docs remain locally shared. Init also writes `.a-exp/kit.lock.yaml`, a fuller `AGENTS.md`, `modules/registry.yaml`, `ledger.yaml`, `APPROVAL_QUEUE.md`, project/module README files, durable `.gitkeep` placeholders, and a workspace `.gitignore`.

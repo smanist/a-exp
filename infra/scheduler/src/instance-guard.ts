@@ -11,7 +11,8 @@ export function isPidAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
+  } catch (err) {
+    if (err && typeof err === 'object' && (err as NodeJS.ErrnoException).code === 'EPERM') return true;
     return false;
   }
 }
@@ -41,6 +42,17 @@ export function checkForExistingInstance(lockfilePath: string): InstanceCheckRes
     existingPid: pid,
     message: `Another scheduler instance is already running with PID ${pid}. Refusing to start to prevent conflicts.`,
   };
+}
+
+export function getDaemonStateFromLockfile(lockfilePath: string): 'running' | 'stopped' {
+  if (!fs.existsSync(lockfilePath)) return 'stopped';
+  try {
+    const pid = parseInt(fs.readFileSync(lockfilePath, 'utf-8').trim(), 10);
+    if (isNaN(pid)) return 'stopped';
+    return isPidAlive(pid) ? 'running' : 'stopped';
+  } catch {
+    return 'stopped';
+  }
 }
 
 export function acquireLock(lockfilePath: string): void {

@@ -55,6 +55,7 @@ import {
   acquireLock,
   releaseLock,
   getSchedulerLockfilePath,
+  getDaemonStateFromLockfile,
   isPidAlive,
 } from "./instance-guard.js";
 import { initWorkspace, legacyWorkspacePaths, resolveWorkspace, type Workspace } from "./workspace.js";
@@ -227,6 +228,10 @@ async function buildStatus(workspace: Workspace, daemonState: "running" | "stopp
     jobs: store.list().map(toStatusJob),
     daemonState,
   });
+}
+
+export function getDaemonState(workspace: Pick<Workspace, "lockDir">): "running" | "stopped" {
+  return getDaemonStateFromLockfile(getSchedulerLockfilePath(workspace.lockDir));
 }
 
 async function main(): Promise<void> {
@@ -414,7 +419,7 @@ async function cmdSetEnabled(id: string, enabled: boolean, repo?: string): Promi
 async function cmdStatus(repo?: string): Promise<void> {
   const workspace = requireWorkspace(repo);
   configureWorkspaceRuntime(workspace);
-  console.log(formatUnifiedStatus(await buildStatus(workspace, "stopped")));
+  console.log(formatUnifiedStatus(await buildStatus(workspace, getDaemonState(workspace))));
 }
 
 async function cmdHeartbeat(repo?: string): Promise<void> {
