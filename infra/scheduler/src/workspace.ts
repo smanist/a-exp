@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join, parse, resolve } from "node:path";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { basename, dirname, join, parse, resolve } from "node:path";
 
 export const WORKSPACE_DIR = ".a-exp";
 export const LEGACY_STATE_DIR = ".scheduler";
@@ -91,6 +92,7 @@ export function legacyWorkspacePaths(root: string): Workspace {
 
 export async function initWorkspace(root: string, project: string): Promise<string[]> {
   const workspace = workspacePaths(root);
+  const kit = resolveSiblingKit(workspace.root);
   const created: string[] = [];
   const projectDir = join(workspace.root, "projects", project);
   const moduleDir = join(workspace.root, "modules", project);
@@ -98,10 +100,24 @@ export async function initWorkspace(root: string, project: string): Promise<stri
   await ensureDir(workspace.stateDir, created, workspace.root);
   await ensureFile(
     workspace.configPath,
-    `layout_version: ${LAYOUT_VERSION}\ndefault_project: ${project}\n`,
+    defaultConfig(project, kit.selfHosting),
     created,
     workspace.root,
   );
+  await ensureFile(
+    join(workspace.stateDir, "kit.lock.yaml"),
+    kitLock(kit),
+    created,
+    workspace.root,
+  );
+  await ensureFile(
+    join(workspace.root, ".gitignore"),
+    defaultGitignore(),
+    created,
+    workspace.root,
+  );
+  await ensureSymlink(join(workspace.root, ".agents"), "../a-exp/.agents", created, workspace.root, kit.selfHosting);
+  await ensureSymlink(join(workspace.root, "docs"), "../a-exp/docs", created, workspace.root, kit.selfHosting);
   await ensureFile(
     join(workspace.root, "AGENTS.md"),
     defaultAgents(project),
@@ -109,7 +125,9 @@ export async function initWorkspace(root: string, project: string): Promise<stri
     workspace.root,
   );
   await ensureDir(join(projectDir, "plans"), created, workspace.root);
+  await ensureFile(join(projectDir, "plans", ".gitkeep"), "", created, workspace.root);
   await ensureDir(join(projectDir, "experiments"), created, workspace.root);
+  await ensureFile(join(projectDir, "experiments", ".gitkeep"), "", created, workspace.root);
   await ensureFile(
     join(projectDir, "README.md"),
     defaultProjectReadme(project),
@@ -128,10 +146,55 @@ export async function initWorkspace(root: string, project: string): Promise<stri
     created,
     workspace.root,
   );
+  await ensureFile(
+    join(projectDir, "ledger.yaml"),
+    defaultLedger(),
+    created,
+    workspace.root,
+  );
+  await ensureFile(
+    join(moduleDir, "README.md"),
+    defaultModuleReadme(project),
+    created,
+    workspace.root,
+  );
   await ensureDir(join(moduleDir, "artifacts"), created, workspace.root);
+  await ensureFile(join(moduleDir, "artifacts", ".gitkeep"), "", created, workspace.root);
+  await ensureFile(
+    join(workspace.root, "modules", "registry.yaml"),
+    defaultRegistry(project),
+    created,
+    workspace.root,
+  );
   await ensureDir(join(workspace.root, "reports"), created, workspace.root);
+  await ensureFile(join(workspace.root, "reports", ".gitkeep"), "", created, workspace.root);
+  await ensureFile(
+    join(workspace.root, "APPROVAL_QUEUE.md"),
+    defaultApprovalQueue(),
+    created,
+    workspace.root,
+  );
 
   return created;
+}
+
+function resolveSiblingKit(root: string): {
+  source: string;
+  commit: string;
+  dirty: boolean;
+  selfHosting: boolean;
+} {
+  const selfHosting = basename(root) === "a-exp";
+  const source = selfHosting ? root : join(dirname(root), "a-exp");
+  if (!existsSync(join(source, ".agents", "skills")) || !existsSync(join(source, "docs"))) {
+    throw new Error(`a-exp kit not found at ${source}. Initialize project repos next to a-exp so kit links resolve via ../a-exp.`);
+  }
+  return {
+    source,
+    commit: gitOutput(source, ["rev-parse", "HEAD"]) ?? "unknown",
+    dirty: (gitOutput(source, ["status", "--short"]) ?? "").trim().length > 0,
+    selfHosting,
+  };
 }
 
 async function ensureDir(path: string, created: string[], root: string): Promise<void> {
@@ -147,8 +210,29 @@ async function ensureFile(path: string, content: string, created: string[], root
   created.push(relativePath(root, path));
 }
 
+async function ensureSymlink(
+  path: string,
+  target: string,
+  created: string[],
+  root: string,
+  skip: boolean,
+): Promise<void> {
+  if (skip || existsSync(path)) return;
+  await mkdir(dirname(path), { recursive: true });
+  await symlink(target, path, "dir");
+  created.push(`${relativePath(root, path)} -> ${target}`);
+}
+
 function relativePath(root: string, path: string): string {
   return path.slice(root.length + 1);
+}
+
+function gitOutput(cwd: string, args: string[]): string | null {
+  try {
+    return execFileSync("git", args, { cwd, encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return null;
+  }
 }
 
 function titleFromProject(project: string): string {
@@ -162,7 +246,31 @@ function titleFromProject(project: string): string {
 function defaultAgents(project: string): string {
   return `# AGENTS.md
 
-This repo is an a-exp project workspace. Durable project memory lives in \`projects/${project}/\`; project-owned code and heavy artifacts live in \`modules/${project}/\`.
+This repo is an a-exp project workspace. It uses the sibling a-exp operating kit through local symlinks:
+
+- \`.agents -> ../a-exp/.agents\`
+- \`docs -> ../a-exp/docs\`
+
+The kit commit is recorded in \`.a-exp/kit.lock.yaml\`. If a symlink is broken, keep this repo parallel to the a-exp repo so \`../a-exp\` resolves correctly.
+
+## Repository Layout
+
+- \`.a-exp/config.yaml\` records workspace metadata.
+- \`.a-exp/kit.lock.yaml\` records the sibling a-exp kit commit used at init time.
+- \`AGENTS.md\` is the operating contract for agents in this project repo.
+- \`.agents/skills/\` exposes local a-exp skills from \`../a-exp\`.
+- \`docs/\` exposes schemas and conventions from \`../a-exp\`.
+- \`projects/${project}/README.md\` records mission, context, log, and open questions.
+- \`projects/${project}/TASKS.md\` records decomposed next actions.
+- \`projects/${project}/budget.yaml\` declares lightweight resource limits when needed.
+- \`projects/${project}/ledger.yaml\` records declared usage when needed.
+- \`projects/${project}/plans/\` holds non-trivial plans.
+- \`projects/${project}/experiments/<id>/EXPERIMENT.md\` holds experiment records.
+- \`modules/registry.yaml\` maps projects to execution modules.
+- \`modules/${project}/\` holds project-owned code and heavy artifacts.
+- \`modules/${project}/artifacts/<experiment-id>/\` holds run outputs.
+- \`reports/\` holds generated reports.
+- \`APPROVAL_QUEUE.md\` records pending human approvals.
 
 ## Work Cycle
 
@@ -176,9 +284,60 @@ This repo is an a-exp project workspace. Durable project memory lives in \`proje
 ## Recording Rules
 
 - Non-obvious discovery -> record it in the project files in the same turn.
-- Decision -> record it before relying on it later.
+- Decision -> record it in a project log or plan before relying on it later.
+- Non-trivial plan -> write it under \`projects/${project}/plans/\`.
 - Experiment -> create or update \`projects/${project}/experiments/<id>/EXPERIMENT.md\`.
+- Verification -> log the exact command and result in the project README.
+- Open question -> add it to the project's \`## Open questions\` section.
 - Heavy outputs -> keep them under \`modules/${project}/artifacts/\`.
+
+## Tasks
+
+Tasks use this shape:
+
+\`\`\`markdown
+- [ ] Imperative task title
+  Why: Why this matters.
+  Done when: Mechanically verifiable completion condition.
+  Priority: high|medium|low
+\`\`\`
+
+Use \`[blocked-by: ...]\` only for conditions outside agent control, such as missing credentials or explicit human approval.
+
+## Budgets
+
+Budget support is lightweight. \`budget.yaml\` declares limits; \`ledger.yaml\` records declared usage. Reports may summarize these files, but a-exp does not audit external providers or enforce provider-backed accounting.
+
+## Experiments
+
+Do not supervise long-running experiments in an agent session. Keep experiment records in \`projects/${project}/experiments/\` and heavy outputs in \`modules/${project}/artifacts/\`.
+
+## Scheduler
+
+Use the installed \`a-exp\` CLI from this workspace:
+
+- \`a-exp start\`, \`a-exp stop\`
+- \`a-exp add\`, \`a-exp list\`, \`a-exp run\`, \`a-exp remove\`, \`a-exp enable\`, \`a-exp disable\`
+- \`a-exp status\`, \`a-exp heartbeat\`, \`a-exp check-health\`
+
+The scheduler must run without Slack tokens; Slack functions should degrade to no-ops.
+`;
+}
+
+function defaultConfig(project: string, selfHosting: boolean): string {
+  return `layout_version: ${LAYOUT_VERSION}
+default_project: ${project}
+kit:
+  mode: ${selfHosting ? "local" : "symlink"}
+  source: ${selfHosting ? "." : "../a-exp"}
+`;
+}
+
+function kitLock(kit: { commit: string; dirty: boolean; selfHosting: boolean }): string {
+  return `source: ../a-exp
+commit: ${kit.commit}
+dirty: ${kit.dirty ? "true" : "false"}
+self_hosting: ${kit.selfHosting ? "true" : "false"}
 `;
 }
 
@@ -223,5 +382,53 @@ function defaultBudget(): string {
   return `# Optional lightweight resource and time budget for this project.
 
 resources: {}
+`;
+}
+
+function defaultLedger(): string {
+  return `# Declared resource usage for this project.
+
+entries: []
+`;
+}
+
+function defaultModuleReadme(project: string): string {
+  return `# ${titleFromProject(project)} Module
+
+Project-owned code and heavy artifacts for \`projects/${project}\` live here.
+
+Use \`artifacts/<experiment-id>/\` for experiment outputs that are too large or noisy for project memory files.
+`;
+}
+
+function defaultRegistry(project: string): string {
+  return `entries:
+  - project: ${project}
+    module: ${project}
+    path: modules/${project}
+    type: local-scratch
+`;
+}
+
+function defaultApprovalQueue(): string {
+  return `# Approval Queue
+
+## Pending
+
+## Completed
+`;
+}
+
+function defaultGitignore(): string {
+  return `.DS_Store
+.env
+.env.local
+__pycache__/
+*.pyc
+.a-exp/*
+!.a-exp/
+!.a-exp/config.yaml
+!.a-exp/kit.lock.yaml
+reports/*.tmp
 `;
 }

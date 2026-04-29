@@ -26,6 +26,17 @@ repo explicitly:
 ./a-exp --repo /path/to/project-repo status
 ```
 
+`init` is optimized for local sibling repos:
+
+```text
+Repos/
+  a-exp/
+  project-repo/
+```
+
+It creates `.agents -> ../a-exp/.agents` and `docs -> ../a-exp/docs`, then
+records the sibling kit commit in `.a-exp/kit.lock.yaml`.
+
 ## Build
 
 ```bash

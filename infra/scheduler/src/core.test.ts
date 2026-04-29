@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -8,6 +8,16 @@ import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferenceP
 import { computeNextRunAtMs } from "./schedule.js";
 import { JobStore } from "./store.js";
 import { findWorkspaceRoot, initWorkspace, resolveWorkspace, workspacePaths } from "./workspace.js";
+
+async function makeSiblingWorkspace(prefix: string): Promise<{ parent: string; repo: string }> {
+  const parent = await mkdtemp(join(tmpdir(), prefix));
+  const kit = join(parent, "a-exp");
+  const repo = join(parent, "demo-repo");
+  await mkdir(join(kit, ".agents", "skills"), { recursive: true });
+  await mkdir(join(kit, "docs"), { recursive: true });
+  await mkdir(repo, { recursive: true });
+  return { parent, repo };
+}
 
 describe("a-exp core scheduler", () => {
   it("computes future interval schedules", () => {
@@ -35,50 +45,72 @@ describe("a-exp core scheduler", () => {
   });
 
   it("discovers initialized workspaces from nested directories and explicit repo paths", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "a-exp-workspace-"));
+    const { parent, repo } = await makeSiblingWorkspace("a-exp-workspace-");
     try {
-      await initWorkspace(dir, "demo");
-      const nested = join(dir, "modules", "demo", "src");
+      await initWorkspace(repo, "demo");
+      const nested = join(repo, "modules", "demo", "src");
       await mkdir(nested, { recursive: true });
 
-      expect(findWorkspaceRoot(nested)).toBe(dir);
-      expect(resolveWorkspace({ repo: dir })?.root).toBe(dir);
-      expect(resolveWorkspace({ startDir: nested })?.root).toBe(dir);
+      expect(findWorkspaceRoot(nested)).toBe(repo);
+      expect(resolveWorkspace({ repo })?.root).toBe(repo);
+      expect(resolveWorkspace({ startDir: nested })?.root).toBe(repo);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(parent, { recursive: true, force: true });
     }
   });
 
   it("initializes the project scaffold without overwriting existing files", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "a-exp-init-"));
+    const { parent, repo } = await makeSiblingWorkspace("a-exp-init-");
     try {
-      const agentsPath = join(dir, "AGENTS.md");
+      const agentsPath = join(repo, "AGENTS.md");
       await writeFile(agentsPath, "custom instructions\n", "utf-8");
 
-      const created = await initWorkspace(dir, "demo");
+      const created = await initWorkspace(repo, "demo");
       expect(created).toContain(".a-exp/config.yaml");
+      expect(created).toContain(".a-exp/kit.lock.yaml");
+      expect(created).toContain(".gitignore");
+      expect(created).toContain(".agents -> ../a-exp/.agents");
+      expect(created).toContain("docs -> ../a-exp/docs");
       expect(created).toContain("projects/demo/README.md");
       expect(created).toContain("projects/demo/TASKS.md");
       expect(created).toContain("projects/demo/budget.yaml");
+      expect(created).toContain("projects/demo/ledger.yaml");
+      expect(created).toContain("projects/demo/plans/.gitkeep");
+      expect(created).toContain("projects/demo/experiments/.gitkeep");
+      expect(created).toContain("modules/registry.yaml");
       expect(created).toContain("modules/demo/artifacts/");
+      expect(created).toContain("modules/demo/artifacts/.gitkeep");
       expect(created).toContain("reports/");
+      expect(created).toContain("reports/.gitkeep");
+      expect(created).toContain("APPROVAL_QUEUE.md");
       expect(await readFile(agentsPath, "utf-8")).toBe("custom instructions\n");
+      expect(await readlink(join(repo, ".agents"))).toBe("../a-exp/.agents");
+      expect(await readlink(join(repo, "docs"))).toBe("../a-exp/docs");
+    } finally {
+      await rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("requires non-self-hosting workspaces to be parallel to an a-exp kit", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "a-exp-no-kit-"));
+    try {
+      await expect(initWorkspace(dir, "demo")).rejects.toThrow(/a-exp kit not found/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
   });
 
   it("keeps jobs and operator preferences under workspace .a-exp", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "a-exp-state-"));
+    const { parent, repo } = await makeSiblingWorkspace("a-exp-state-");
     try {
-      await initWorkspace(dir, "demo");
-      const paths = workspacePaths(dir);
+      await initWorkspace(repo, "demo");
+      const paths = workspacePaths(repo);
 
       const store = new JobStore(paths.jobsPath);
       await store.add({
         name: "test",
         schedule: { kind: "every", everyMs: 60_000 },
-        payload: { message: "hello", cwd: dir },
+        payload: { message: "hello", cwd: repo },
       });
       expect(JSON.parse(await readFile(paths.jobsPath, "utf-8")).jobs).toHaveLength(1);
 
@@ -95,7 +127,7 @@ describe("a-exp core scheduler", () => {
       setModelPreferencePath(null);
       setLegacyBackendPreferencePath(null);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await rm(parent, { recursive: true, force: true });
     }
   });
 

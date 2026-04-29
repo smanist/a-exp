@@ -19,6 +19,11 @@ layer. The CLI implementation may be installed elsewhere; the workspace repo is
 selected by `--repo <dir>` or by discovering `.a-exp/config.yaml` from the
 current directory.
 
+For local distributed-project usage, project repos are initialized parallel to
+the a-exp repo. `a-exp init` links `.agents` and `docs` to `../a-exp` so skills
+and conventions have one local source of truth while project state remains in
+the project repo.
+
 ## Principles
 
 1. Plain text first: Markdown and YAML are easy for humans, agents, and git.
@@ -27,8 +32,8 @@ current directory.
 4. Shared tools live in `infra/`.
 5. Grow structure only when a real project needs it.
 6. Keep the core small enough that a new agent can read it quickly.
-7. Keep runtime scheduler state under `.a-exp/`; commit only
-   `.a-exp/config.yaml` as the workspace anchor.
+7. Keep runtime scheduler state under `.a-exp/`; commit
+   `.a-exp/config.yaml` and `.a-exp/kit.lock.yaml` as workspace anchors.
 
 ## Retained Runtime
 

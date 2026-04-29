@@ -8,6 +8,7 @@ __pycache__/
 .a-exp/*
 !.a-exp/
 !.a-exp/config.yaml
+!.a-exp/kit.lock.yaml
 modules/.worktrees/
 infra/scheduler/dist/
 infra/scheduler/data/sessions.db

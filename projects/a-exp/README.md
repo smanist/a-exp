@@ -22,6 +22,24 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-04-29 (Expanded init into a local workspace kit)
+
+Updated `a-exp init` for local distributed project repos. New project repos must now be parallel to an `a-exp/` checkout, and init creates `.agents -> ../a-exp/.agents` plus `docs -> ../a-exp/docs` so skills and docs remain locally shared. Init also writes `.a-exp/kit.lock.yaml`, a fuller `AGENTS.md`, `modules/registry.yaml`, `ledger.yaml`, `APPROVAL_QUEUE.md`, project/module README files, durable `.gitkeep` placeholders, and a workspace `.gitignore`.
+
+Verification:
+- `cd infra/scheduler && npm run build && npm test`: passed, 2 files and 8 tests.
+- `cd infra/scheduler && node dist/cli.js --repo /tmp/a-exp-sibling-init.ZUtKJd/project-repo init --project demo`: created symlinked `.agents`/`docs`, kit lock, registry, placeholders, and project scaffold in a temp sibling layout.
+- `readlink /tmp/a-exp-sibling-init.ZUtKJd/project-repo/.agents`: printed `../a-exp/.agents`.
+- `readlink /tmp/a-exp-sibling-init.ZUtKJd/project-repo/docs`: printed `../a-exp/docs`.
+
+Files:
+- `.a-exp/config.yaml`
+- `.gitignore`
+- `README.md`
+- `docs/`
+- `infra/scheduler/`
+- `projects/a-exp/README.md`
+
 ### 2026-04-29 (Made a-exp target initialized project repos)
 
 Implemented the generic project-repo workflow. The scheduler CLI now resolves a workspace through `--repo <dir>` or upward discovery of `.a-exp/config.yaml`, adds `a-exp init --project <name>`, and writes scheduler runtime state under workspace-local `.a-exp/` paths. The source checkout remains self-hosting through the tracked `.a-exp/config.yaml`; generated `.a-exp` runtime files stay ignored.

@@ -27,8 +27,18 @@ cd ../..
 ./a-exp start
 ```
 
-When installed as a package, run the same commands from any project repo. `a-exp`
-discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
+For local use, create project repos parallel to this checkout so the reusable
+agent kit resolves through `../a-exp`:
+
+```text
+Repos/
+  a-exp/
+  my-research-project/
+```
+
+`a-exp init` symlinks `.agents` and `docs` from the sibling a-exp repo, records
+the kit commit in `.a-exp/kit.lock.yaml`, and keeps project memory local.
+`a-exp` discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
 `--repo <dir>` when a script or daemon should target a specific repo.
 
 Slack is optional. Configure these variables to enable it:
@@ -45,6 +55,8 @@ SLACK_USER_ID=...
 |---|---|
 | `AGENTS.md` | Operating contract for agents in this repo |
 | `.a-exp/config.yaml` | Workspace anchor and layout metadata |
+| `.a-exp/kit.lock.yaml` | Sibling kit source and commit recorded at init time |
+| `.agents/skills/` | Agent skills, symlinked from `../a-exp` in local project repos |
 | `infra/scheduler/` | Cron scheduler, session launch, Slack, status, reports |
 | `infra/experiment-runner/` | Fire-and-forget experiment execution with artifacts |
 | `infra/experiment-validator/` | Experiment record validation |
@@ -66,6 +78,7 @@ projects/<project>/
 
 modules/<module>/
   artifacts/<experiment-id>/
+modules/registry.yaml
 ```
 
 Project directories hold memory and coordination. Module directories hold code and heavy outputs.
@@ -79,6 +92,9 @@ Scheduler runtime files are workspace-local and ignored by git:
 .a-exp/channel-modes.json
 .a-exp/model-preference.json
 ```
+
+Initialized project repos keep `.a-exp/config.yaml` and
+`.a-exp/kit.lock.yaml` durable while ignoring the runtime files above.
 
 ## Scheduler
 
