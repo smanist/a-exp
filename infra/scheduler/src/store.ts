@@ -1,7 +1,7 @@
 /** Persistent JSON file store for scheduler jobs. */
 
 import { readFile, writeFile, mkdir, rename, access } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import type { Store, Job, JobCreate, Schedule } from "./types.js";
 import { computeNextRunAtMs } from "./schedule.js";
 
@@ -12,10 +12,7 @@ function scheduleFingerprint(s: Schedule): string {
   return "unknown";
 }
 
-const DEFAULT_STORE_PATH = new URL(
-  "../../../.scheduler/jobs.json",
-  import.meta.url,
-).pathname;
+const DEFAULT_STORE_PATH = join(process.cwd(), ".a-exp", "jobs.json");
 
 function emptyStore(): Store {
   return { version: 1, jobs: [] };
@@ -65,10 +62,12 @@ function emptyState(): Job["state"] {
 
 export class JobStore {
   private storePath: string;
+  private legacyStorePath: string | null;
   private data: Store | null = null;
 
-  constructor(storePath?: string) {
+  constructor(storePath?: string, legacyStorePath?: string | null) {
     this.storePath = storePath ?? DEFAULT_STORE_PATH;
+    this.legacyStorePath = legacyStorePath ?? null;
   }
 
   async load(): Promise<Store> {
@@ -92,7 +91,8 @@ export class JobStore {
         // Promote .tmp to main file
         await rename(tmpPath, this.storePath);
       } catch {
-        this.data = emptyStore();
+        this.data = await this.loadLegacyStore();
+        dirty = this.data.jobs.length > 0;
       }
     }
     // Reconcile: recompute nextRunAtMs for enabled jobs whose schedule changed
@@ -103,6 +103,16 @@ export class JobStore {
       await this.save();
     }
     return this.data;
+  }
+
+  private async loadLegacyStore(): Promise<Store> {
+    if (!this.legacyStorePath) return emptyStore();
+    try {
+      const raw = await readFile(this.legacyStorePath, "utf-8");
+      return normalizeStore(JSON.parse(raw) as Store).store;
+    } catch {
+      return emptyStore();
+    }
   }
 
   /**

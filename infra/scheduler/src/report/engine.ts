@@ -12,7 +12,7 @@ import type { ReportOptions, ReportResult, ChartSpec } from "./types.js";
 
 /** Generate a report and return the content + rendered chart buffers. */
 export async function generateReport(opts: ReportOptions): Promise<ReportResult> {
-  const data = await gatherReportData(opts.repoDir, opts.periodFrom, opts.periodTo);
+  const data = await gatherReportData(opts.repoDir, opts.periodFrom, opts.periodTo, opts.metricsPath);
 
   let content: string;
   let chartSpecs: ChartSpec[];

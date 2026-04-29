@@ -14,7 +14,7 @@ import { notifySessionStarted, notifySessionComplete } from "./slack.js";
 import { getPendingApprovals } from "./notify.js";
 
 const exec = promisify(execFile);
-const LOGS_DIR = new URL("../../../.scheduler/logs", import.meta.url).pathname;
+const DEFAULT_LOGS_DIR = join(process.cwd(), ".a-exp", "logs");
 export const UNCOMMITTED_FILE_WARNING_THRESHOLD = 50;
 
 export interface ExecutionResult {
@@ -66,9 +66,13 @@ export function formatExecutionSummary(agentResult: {
   return line;
 }
 
-function buildLogFilePath(jobName: string): string {
+export interface ExecuteJobOptions {
+  logsDir?: string;
+}
+
+function buildLogFilePath(jobName: string, logsDir: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
-  return join(LOGS_DIR, `${jobName}-${ts}.log`);
+  return join(logsDir, `${jobName}-${ts}.log`);
 }
 
 async function writeExecutionLog(opts: {
@@ -76,9 +80,10 @@ async function writeExecutionLog(opts: {
   runtime: RuntimeRoute;
   summary: { durationMs: number; costUsd: number; numTurns: number; modelUsage?: Record<string, ModelUsageStats> };
   output: string;
+  logsDir: string;
 }): Promise<string> {
-  const logFile = buildLogFilePath(opts.jobName);
-  await mkdir(LOGS_DIR, { recursive: true });
+  const logFile = buildLogFilePath(opts.jobName, opts.logsDir);
+  await mkdir(opts.logsDir, { recursive: true });
   await writeFile(
     logFile,
     `# ${opts.jobName} — ${new Date().toISOString()}\n# Runtime: ${opts.runtime}\n${formatExecutionSummary(opts.summary)}\n\n## output\n${opts.output}\n`,
@@ -91,9 +96,10 @@ async function writeErrorLog(opts: {
   runtime: RuntimeRoute;
   durationMs: number;
   error: string;
+  logsDir: string;
 }): Promise<string> {
-  const logFile = buildLogFilePath(opts.jobName);
-  await mkdir(LOGS_DIR, { recursive: true });
+  const logFile = buildLogFilePath(opts.jobName, opts.logsDir);
+  await mkdir(opts.logsDir, { recursive: true });
   await writeFile(
     logFile,
     `# ${opts.jobName} — ${new Date().toISOString()}\n# Runtime: ${opts.runtime}\n# Duration: ${Math.round(opts.durationMs / 1000)}s, ERROR\n\n## error\n${opts.error}\n`,
@@ -116,9 +122,11 @@ export async function checkUncommittedFileThreshold(cwd: string): Promise<void> 
 export async function executeJob(
   job: Job,
   triggerSource: "scheduler" | "slack" | "manual" = "scheduler",
+  opts: ExecuteJobOptions = {},
 ): Promise<ExecutionResult> {
   const start = Date.now();
   const cwd = job.payload.cwd ?? process.cwd();
+  const logsDir = opts.logsDir ?? DEFAULT_LOGS_DIR;
   const backend = resolveBackend({
     model: job.payload.model,
     requiredCapabilities: job.payload.requiredCapabilities,
@@ -149,6 +157,7 @@ export async function executeJob(
       runtime,
       summary: agentResult,
       output: agentResult.text,
+      logsDir,
     });
     const execution: ExecutionResult = {
       ok: !agentResult.timedOut && !agentResult.sleepViolation && !agentResult.stallViolation,
@@ -174,7 +183,7 @@ export async function executeJob(
   } catch (err) {
     const durationMs = Date.now() - start;
     const error = err instanceof Error ? err.message : String(err);
-    const logFile = await writeErrorLog({ jobName: job.name, runtime, durationMs, error });
+    const logFile = await writeErrorLog({ jobName: job.name, runtime, durationMs, error, logsDir });
     const execution: ExecutionResult = {
       ok: false,
       durationMs,

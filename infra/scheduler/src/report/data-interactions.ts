@@ -1,6 +1,7 @@
 /** Interaction analytics for reports — action frequency, fulfillment rates. */
 
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { InteractionRecord } from "../metrics.js";
 
 export interface InteractionSummary {
@@ -12,10 +13,7 @@ export interface InteractionSummary {
   avgTurnsBeforeAction: number;
 }
 
-const DEFAULT_INTERACTIONS_PATH = new URL(
-  "../../../../.scheduler/metrics/interactions.jsonl",
-  import.meta.url,
-).pathname;
+const DEFAULT_INTERACTIONS_PATH = join(process.cwd(), ".a-exp", "metrics", "interactions.jsonl");
 
 /** Read and aggregate interaction records. */
 export async function aggregateInteractions(

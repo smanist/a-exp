@@ -1,6 +1,7 @@
 # Design
 
-a-exp Core treats the repository as the durable memory for recurring agent sessions.
+a-exp Core treats each initialized project repository as the durable memory for
+recurring agent sessions.
 
 ## Premise
 
@@ -13,7 +14,10 @@ LLM sessions are stateless. The repo stores what a continuing research assistant
 - artifact locations
 - lightweight budgets
 
-The scheduler and Slack interface are operational helpers around that memory layer.
+The scheduler and Slack interface are operational helpers around that memory
+layer. The CLI implementation may be installed elsewhere; the workspace repo is
+selected by `--repo <dir>` or by discovering `.a-exp/config.yaml` from the
+current directory.
 
 ## Principles
 
@@ -23,6 +27,8 @@ The scheduler and Slack interface are operational helpers around that memory lay
 4. Shared tools live in `infra/`.
 5. Grow structure only when a real project needs it.
 6. Keep the core small enough that a new agent can read it quickly.
+7. Keep runtime scheduler state under `.a-exp/`; commit only
+   `.a-exp/config.yaml` as the workspace anchor.
 
 ## Retained Runtime
 

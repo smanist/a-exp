@@ -5,6 +5,7 @@ Minimal cron scheduler for recurring agent sessions, Slack notifications, status
 ## Commands
 
 ```bash
+./a-exp init --project my-research-project
 ./a-exp start
 ./a-exp stop
 ./a-exp add --name work-cycle --cron "0 * * * *" --message-default --model gpt-5.2
@@ -15,6 +16,14 @@ Minimal cron scheduler for recurring agent sessions, Slack notifications, status
 ./a-exp status
 ./a-exp heartbeat
 ./a-exp check-health --notify
+```
+
+All commands target the initialized workspace discovered from the current
+directory by `.a-exp/config.yaml`. Use `--repo <dir>` to target another project
+repo explicitly:
+
+```bash
+./a-exp --repo /path/to/project-repo status
 ```
 
 ## Build
@@ -61,7 +70,7 @@ Reports are generated from repo files and scheduler metrics:
 
 ```bash
 cd infra/scheduler
-npx tsx src/report/run-report.ts --type project --project a-exp
+npx tsx src/report/run-report.ts --repo ../.. --type project --project a-exp
 ```
 
 Budget report data is lightweight: it reads `projects/*/budget.yaml` and `ledger.yaml` only.

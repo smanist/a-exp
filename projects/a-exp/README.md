@@ -22,6 +22,28 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-04-29 (Made a-exp target initialized project repos)
+
+Implemented the generic project-repo workflow. The scheduler CLI now resolves a workspace through `--repo <dir>` or upward discovery of `.a-exp/config.yaml`, adds `a-exp init --project <name>`, and writes scheduler runtime state under workspace-local `.a-exp/` paths. The source checkout remains self-hosting through the tracked `.a-exp/config.yaml`; generated `.a-exp` runtime files stay ignored.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 7 tests.
+- `cd infra/scheduler && node dist/cli.js --repo /tmp/a-exp-workspace-test.1b07ix init --project demo`: created the project scaffold under the temp repo.
+- `cd infra/scheduler && node dist/cli.js --repo /tmp/a-exp-workspace-test.1b07ix add --name work-cycle --every 60000 --message-default`: created `.a-exp/jobs.json` in the temp repo.
+- `cd infra/scheduler && node dist/cli.js --repo /tmp/a-exp-workspace-test.1b07ix list`: listed the temp repo job.
+- `cd infra/scheduler && node dist/cli.js --repo /tmp/a-exp-workspace-test.1b07ix status`: reported one enabled job.
+- `cd /tmp/a-exp-workspace-test.1b07ix/projects/demo && node /Users/daninghuang/Repos/a-exp/infra/scheduler/dist/cli.js list`: auto-discovered the temp repo workspace and listed the job.
+- `./a-exp status`: passed in the self-hosting source repo.
+
+Files:
+- `.a-exp/config.yaml`
+- `.gitignore`
+- `README.md`
+- `docs/`
+- `infra/scheduler/`
+- `projects/a-exp/README.md`
+
 ### 2026-04-29 (Renamed previous identity to a-exp)
 
 Renamed the remaining previous project identity, module, CLI wrapper, scheduler package/bin metadata, Slack command examples, docs, tracked skills, and support paths to `a-exp`.

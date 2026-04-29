@@ -2,12 +2,11 @@
 /** CLI for the trimmed a-exp scheduler. */
 
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const repoRoot = resolve(__dirname, "../../..");
-const schedulerStateDir = resolve(repoRoot, ".scheduler");
+const toolRoot = resolve(__dirname, "../../..");
 const systemEnvKeys = new Set(Object.keys(process.env));
 
 function loadEnvFile(path: string): void {
@@ -37,14 +36,16 @@ export function mergeEnvContent(target: Record<string, string>, content: string)
   }
 }
 
-loadEnvFile(resolve(repoRoot, "infra/.env"));
-loadEnvFile(resolve(repoRoot, "infra/scheduler/.env"));
+loadEnvFile(resolve(toolRoot, "infra/.env"));
+loadEnvFile(resolve(toolRoot, "infra/scheduler/.env"));
 
 import { JobStore } from "./store.js";
 import { SchedulerService } from "./service.js";
 import { executeJob } from "./executor.js";
 import { getPendingApprovals } from "./notify.js";
 import * as slack from "./slack.js";
+import { setChannelModesPath } from "./channel-mode.js";
+import { setModelPreferencePath, setLegacyBackendPreferencePath } from "./model-preference.js";
 import { listSessions } from "./session.js";
 import { listExperiments } from "./experiments.js";
 import { getUnifiedStatus, formatUnifiedStatus, toStatusExperiment, type StatusJob } from "./status.js";
@@ -56,12 +57,14 @@ import {
   getSchedulerLockfilePath,
   isPidAlive,
 } from "./instance-guard.js";
+import { initWorkspace, legacyWorkspacePaths, resolveWorkspace, type Workspace } from "./workspace.js";
 import type { Job, JobCreate, Schedule } from "./types.js";
 
 const HELP = `
 a-exp — Cron scheduler for a-exp Core
 
 Commands:
+  init --project <name>     Initialize an a-exp project workspace in this repo
   start                     Run the scheduler daemon
   stop                      Stop the running scheduler daemon
   add <options>             Add a scheduled job
@@ -73,6 +76,12 @@ Commands:
   status                    Show sessions, experiments, and jobs
   heartbeat                 Notify Slack if APPROVAL_QUEUE.md has pending items
   check-health              Ping the scheduler API and optionally notify Slack
+
+Global options:
+  --repo <dir>              Target workspace repo (default: discover from cwd)
+
+Init options:
+  --project <name>          Default project name to scaffold
 
 Add options:
   --name <name>             Job name
@@ -112,6 +121,11 @@ function parseOptions(args: string[]): Record<string, string | true> {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (!arg.startsWith("--")) continue;
+    const eq = arg.indexOf("=");
+    if (eq !== -1) {
+      opts[arg.slice(2, eq)] = arg.slice(eq + 1);
+      continue;
+    }
     const key = arg.slice(2);
     const next = args[i + 1];
     if (next && !next.startsWith("--")) {
@@ -122,6 +136,53 @@ function parseOptions(args: string[]): Record<string, string | true> {
     }
   }
   return opts;
+}
+
+function extractGlobalOptions(args: string[]): { repo?: string; args: string[] } {
+  const remaining: string[] = [];
+  let repo: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--repo" && args[i + 1]) {
+      repo = args[++i];
+      continue;
+    }
+    if (arg.startsWith("--repo=")) {
+      repo = arg.slice("--repo=".length);
+      continue;
+    }
+    remaining.push(arg);
+  }
+  return { repo, args: remaining };
+}
+
+function requireWorkspace(repo?: string): Workspace {
+  const workspace = resolveWorkspace({ repo });
+  if (!workspace) {
+    fail("No a-exp workspace found. Run `a-exp init --project <name>` first, or pass --repo <dir>.");
+  }
+  return workspace;
+}
+
+function configureWorkspaceRuntime(workspace: Workspace): void {
+  loadEnvFile(join(workspace.stateDir, ".env"));
+  if (workspace.root === toolRoot) {
+    loadEnvFile(resolve(toolRoot, "infra/.env"));
+    loadEnvFile(resolve(toolRoot, "infra/scheduler/.env"));
+  }
+  setChannelModesPath(workspace.channelModesPath);
+  setModelPreferencePath(workspace.modelPreferencePath);
+  setLegacyBackendPreferencePath(workspace.legacyBackendPreferencePath);
+}
+
+function legacyPathsFor(workspace: Workspace): Workspace | null {
+  if (existsSync(workspace.stateDir)) return null;
+  if (existsSync(workspace.legacyStateDir)) return legacyWorkspacePaths(workspace.root);
+  return null;
+}
+
+function storeFor(workspace: Workspace): JobStore {
+  return new JobStore(workspace.jobsPath, legacyPathsFor(workspace)?.jobsPath ?? null);
 }
 
 function defaultWorkCyclePrompt(): string {
@@ -156,10 +217,10 @@ function toStatusJob(job: Job): StatusJob {
   };
 }
 
-async function buildStatus(daemonState: "running" | "stopped") {
-  const store = new JobStore();
+async function buildStatus(workspace: Workspace, daemonState: "running" | "stopped") {
+  const store = storeFor(workspace);
   await store.load();
-  const experiments = await listExperiments(repoRoot);
+  const experiments = await listExperiments(workspace.root);
   return getUnifiedStatus({
     sessions: listSessions(),
     experiments: experiments.map((e) => toStatusExperiment(e)),
@@ -169,34 +230,55 @@ async function buildStatus(daemonState: "running" | "stopped") {
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  const parsed = extractGlobalOptions(process.argv.slice(2));
+  const args = parsed.args;
   const cmd = args[0];
   if (!cmd || cmd === "--help" || cmd === "-h") {
     console.log(HELP);
     return;
   }
 
-  if (cmd === "start") return cmdStart();
-  if (cmd === "stop") return cmdStop();
-  if (cmd === "add") return cmdAdd(args.slice(1));
-  if (cmd === "list") return cmdList();
-  if (cmd === "remove") return cmdRemove(requireArg(args[1], "job ID"));
-  if (cmd === "run") return cmdRun(requireArg(args[1], "job ID"), args.slice(2));
-  if (cmd === "enable") return cmdSetEnabled(requireArg(args[1], "job ID"), true);
-  if (cmd === "disable") return cmdSetEnabled(requireArg(args[1], "job ID"), false);
-  if (cmd === "status") return cmdStatus();
-  if (cmd === "heartbeat") return cmdHeartbeat();
-  if (cmd === "check-health") return cmdCheckHealth(args.slice(1));
+  if (cmd === "init") return cmdInit(args.slice(1), parsed.repo);
+  if (cmd === "start") return cmdStart(parsed.repo);
+  if (cmd === "stop") return cmdStop(parsed.repo);
+  if (cmd === "add") return cmdAdd(args.slice(1), parsed.repo);
+  if (cmd === "list") return cmdList(parsed.repo);
+  if (cmd === "remove") return cmdRemove(requireArg(args[1], "job ID"), parsed.repo);
+  if (cmd === "run") return cmdRun(requireArg(args[1], "job ID"), args.slice(2), parsed.repo);
+  if (cmd === "enable") return cmdSetEnabled(requireArg(args[1], "job ID"), true, parsed.repo);
+  if (cmd === "disable") return cmdSetEnabled(requireArg(args[1], "job ID"), false, parsed.repo);
+  if (cmd === "status") return cmdStatus(parsed.repo);
+  if (cmd === "heartbeat") return cmdHeartbeat(parsed.repo);
+  if (cmd === "check-health") return cmdCheckHealth(args.slice(1), parsed.repo);
   return fail(`Unknown command: ${cmd}\n\n${HELP}`);
 }
 
-async function cmdStart(): Promise<void> {
-  const lockfile = getSchedulerLockfilePath(schedulerStateDir);
+async function cmdInit(args: string[], repo?: string): Promise<void> {
+  const opts = parseOptions(args);
+  const project = typeof opts.project === "string" ? opts.project.trim() : "";
+  if (!project) fail("Error: --project required.");
+  const root = repo ? resolve(repo) : process.cwd();
+  const created = await initWorkspace(root, project);
+  console.log(`Initialized a-exp workspace at ${root}`);
+  if (created.length === 0) {
+    console.log("No files created; existing workspace scaffold was left unchanged.");
+    return;
+  }
+  for (const path of created) console.log(`  created ${path}`);
+}
+
+async function cmdStart(repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const lockfile = getSchedulerLockfilePath(workspace.lockDir);
   const check = checkForExistingInstance(lockfile);
   if (!check.canStart) fail(check.message);
   acquireLock(lockfile);
 
   const service = new SchedulerService({
+    storePath: workspace.jobsPath,
+    legacyStorePath: legacyPathsFor(workspace)?.jobsPath ?? null,
+    logsDir: workspace.logsDir,
     onAfterRun: async (_job, _result) => {
       // Notifications are sent by executeJob; this hook is reserved for future
       // retained core metrics.
@@ -212,18 +294,19 @@ async function cmdStart(): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  await slack.startSlackBot({ repoDir: repoRoot }).catch((err) => {
+  await slack.startSlackBot({ repoDir: workspace.root }).catch((err) => {
     console.error(`[slack] Failed to start: ${err}`);
   });
   const apiPort = await startApiServer({
-    getStatus: () => buildStatus("running"),
+    getStatus: () => buildStatus(workspace, "running"),
   });
   console.log(`[api] Listening on http://127.0.0.1:${apiPort}`);
   await service.start();
 }
 
-export async function stopScheduler(): Promise<{ ok: boolean; message: string; pid?: number }> {
-  const lockfile = getSchedulerLockfilePath(schedulerStateDir);
+export async function stopScheduler(repo?: string): Promise<{ ok: boolean; message: string; pid?: number }> {
+  const workspace = requireWorkspace(repo);
+  const lockfile = getSchedulerLockfilePath(workspace.lockDir);
   if (!existsSync(lockfile)) return { ok: true, message: "Scheduler is not running" };
   const pid = Number(readFileSync(lockfile, "utf-8").trim());
   if (!Number.isFinite(pid) || !isPidAlive(pid)) {
@@ -234,12 +317,14 @@ export async function stopScheduler(): Promise<{ ok: boolean; message: string; p
   return { ok: true, message: `Sent SIGTERM to scheduler PID ${pid}`, pid };
 }
 
-async function cmdStop(): Promise<void> {
-  const result = await stopScheduler();
+async function cmdStop(repo?: string): Promise<void> {
+  const result = await stopScheduler(repo);
   console.log(result.message);
 }
 
-async function cmdAdd(args: string[]): Promise<void> {
+async function cmdAdd(args: string[], repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
   const opts = parseOptions(args);
   const name = String(opts.name ?? "");
   if (!name) fail("Error: --name required.");
@@ -262,16 +347,17 @@ async function cmdAdd(args: string[]): Promise<void> {
   const payload = {
     message,
     ...(typeof opts.model === "string" ? { model: opts.model } : {}),
-    cwd: typeof opts.cwd === "string" ? resolve(opts.cwd) : repoRoot,
+    cwd: typeof opts.cwd === "string" ? resolve(opts.cwd) : workspace.root,
   };
   const input: JobCreate = { name, schedule, payload };
-  const store = new JobStore();
+  const store = storeFor(workspace);
   const job = await store.add(input);
   console.log(`Added job ${job.name} (${job.id})`);
 }
 
-async function cmdList(): Promise<void> {
-  const store = new JobStore();
+async function cmdList(repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  const store = storeFor(workspace);
   await store.load();
   for (const job of store.list()) {
     const state = job.enabled ? "enabled" : "disabled";
@@ -279,15 +365,18 @@ async function cmdList(): Promise<void> {
   }
 }
 
-async function cmdRemove(id: string): Promise<void> {
-  const store = new JobStore();
+async function cmdRemove(id: string, repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  const store = storeFor(workspace);
   const ok = await store.remove(id);
   if (!ok) fail(`Job not found: ${id}`);
   console.log(`Removed ${id}`);
 }
 
-async function cmdRun(id: string, args: string[]): Promise<void> {
-  const store = new JobStore();
+async function cmdRun(id: string, args: string[], repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const store = storeFor(workspace);
   await store.load();
   const job = store.get(id);
   if (!job) fail(`Job not found: ${id}`);
@@ -302,7 +391,7 @@ async function cmdRun(id: string, args: string[]): Promise<void> {
       ...(typeof opts["max-duration-ms"] === "string" ? { maxDurationMs: Number(opts["max-duration-ms"]) } : {}),
     },
   };
-  const result = await executeJob(runJob, "manual");
+  const result = await executeJob(runJob, "manual", { logsDir: workspace.logsDir });
   await store.updateState(job.id, {
     lastRunAtMs: Date.now(),
     lastStatus: result.ok ? "ok" : "error",
@@ -315,25 +404,30 @@ async function cmdRun(id: string, args: string[]): Promise<void> {
   if (result.error) console.error(result.error);
 }
 
-async function cmdSetEnabled(id: string, enabled: boolean): Promise<void> {
-  const store = new JobStore();
+async function cmdSetEnabled(id: string, enabled: boolean, repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  const store = storeFor(workspace);
   await store.setEnabled(id, enabled);
   console.log(`${enabled ? "Enabled" : "Disabled"} ${id}`);
 }
 
-async function cmdStatus(): Promise<void> {
-  console.log(formatUnifiedStatus(await buildStatus("stopped")));
+async function cmdStatus(repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  console.log(formatUnifiedStatus(await buildStatus(workspace, "stopped")));
 }
 
-async function cmdHeartbeat(): Promise<void> {
-  const approvals = await getPendingApprovals(repoRoot);
+async function cmdHeartbeat(repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const approvals = await getPendingApprovals(workspace.root);
   if (approvals.length === 0) {
     console.log("No pending approvals.");
     return;
   }
   const msg = `${approvals.length} pending approval item(s) in APPROVAL_QUEUE.md`;
   console.log(msg);
-  await slack.notifyPendingApprovals(repoRoot).catch((err) => {
+  await slack.notifyPendingApprovals(workspace.root).catch((err) => {
     console.error(`[slack] Failed to notify: ${err}`);
   });
 }
@@ -357,7 +451,9 @@ export async function runHealthCheck(opts: HealthCheckOptions = {}): Promise<{ o
   }
 }
 
-async function cmdCheckHealth(args: string[]): Promise<void> {
+async function cmdCheckHealth(args: string[], repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
   const opts = parseOptions(args);
   const result = await runHealthCheck({
     url: typeof opts.url === "string" ? opts.url : undefined,

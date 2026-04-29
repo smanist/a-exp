@@ -5,6 +5,9 @@ __pycache__/
 .env.local
 .env.production
 .scheduler/
+.a-exp/*
+!.a-exp/
+!.a-exp/config.yaml
 modules/.worktrees/
 infra/scheduler/dist/
 infra/scheduler/data/sessions.db

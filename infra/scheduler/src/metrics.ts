@@ -1,20 +1,14 @@
 /** Structured session metrics — JSONL storage for Tier 1 (automatically collected) data. */
 
 import { readFile, appendFile, mkdir, open, stat } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { runtimeRouteFromLegacyBackend, type RuntimeRoute } from "./runtime.js";
 import type { ModelUsageStats } from "./sdk.js";
 
-const DEFAULT_METRICS_PATH = new URL(
-  "../../../.scheduler/metrics/sessions.jsonl",
-  import.meta.url,
-).pathname;
+const DEFAULT_METRICS_PATH = join(process.cwd(), ".a-exp", "metrics", "sessions.jsonl");
 
-const DEFAULT_INTERACTIONS_PATH = new URL(
-  "../../../.scheduler/metrics/interactions.jsonl",
-  import.meta.url,
-).pathname;
+const DEFAULT_INTERACTIONS_PATH = join(process.cwd(), ".a-exp", "metrics", "interactions.jsonl");
 
 export interface VerificationMetrics {
   uncommittedFiles: number;

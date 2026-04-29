@@ -3,7 +3,7 @@
  *  model-driven routing. */
 
 import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 interface PersistedModelPreference {
   model?: string;
@@ -15,15 +15,9 @@ interface PersistedLegacyBackendPreference {
 
 let currentPreference: string | null = null;
 
-const DEFAULT_MODEL_PREFERENCE_PATH = new URL(
-  "../../../.scheduler/model-preference.json",
-  import.meta.url,
-).pathname;
+const DEFAULT_MODEL_PREFERENCE_PATH = join(process.cwd(), ".a-exp", "model-preference.json");
 
-const DEFAULT_LEGACY_BACKEND_PREFERENCE_PATH = new URL(
-  "../../../.scheduler/backend-preference.json",
-  import.meta.url,
-).pathname;
+const DEFAULT_LEGACY_BACKEND_PREFERENCE_PATH = join(process.cwd(), ".a-exp", "backend-preference.json");
 
 let modelPreferencePath: string | null = DEFAULT_MODEL_PREFERENCE_PATH;
 let legacyBackendPreferencePath: string | null = DEFAULT_LEGACY_BACKEND_PREFERENCE_PATH;

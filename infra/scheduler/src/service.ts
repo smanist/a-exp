@@ -7,6 +7,8 @@ import type { Job } from "./types.js";
 
 export interface ServiceOptions {
   storePath?: string;
+  legacyStorePath?: string | null;
+  logsDir?: string;
   pollIntervalMs?: number;
   maxConcurrentSessions?: number;
   onBeforeRun?: (job: Job) => boolean | Promise<boolean>;
@@ -23,7 +25,7 @@ export class SchedulerService {
   private runningJobs = new Set<string>();
 
   constructor(private opts: ServiceOptions = {}) {
-    this.store = new JobStore(opts.storePath);
+    this.store = new JobStore(opts.storePath, opts.legacyStorePath);
     this.pollIntervalMs = opts.pollIntervalMs ?? 30_000;
     this.maxConcurrentSessions = opts.maxConcurrentSessions ?? 1;
   }
@@ -84,7 +86,7 @@ export class SchedulerService {
       log(`Executing job: ${job.name} (${job.id})`);
       let result: ExecutionResult;
       try {
-        result = await executeJob(job, "scheduler");
+        result = await executeJob(job, "scheduler", { logsDir: this.opts.logsDir });
       } catch (err) {
         result = {
           ok: false,

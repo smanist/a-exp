@@ -2,6 +2,7 @@
 /** CLI entry point for report generation. Invoked by the /report skill. */
 
 import { generateAndSaveReport } from "./engine.js";
+import { resolveWorkspace } from "../workspace.js";
 import type { ReportType } from "./types.js";
 
 const VALID_TYPES = new Set(["operational", "research", "project", "experiment-comparison"]);
@@ -12,6 +13,7 @@ function parseArgs(): {
   from?: string;
   to?: string;
   ids?: string[];
+  repo?: string;
 } {
   const args = process.argv.slice(2);
   let type: ReportType = "operational";
@@ -19,6 +21,7 @@ function parseArgs(): {
   let from: string | undefined;
   let to: string | undefined;
   let ids: string[] | undefined;
+  let repo: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--type" && args[i + 1]) {
@@ -36,15 +39,22 @@ function parseArgs(): {
       to = args[++i];
     } else if (args[i] === "--ids" && args[i + 1]) {
       ids = args[++i].split(",").map((s) => s.trim());
+    } else if (args[i] === "--repo" && args[i + 1]) {
+      repo = args[++i];
     }
   }
 
-  return { type, project, from, to, ids };
+  return { type, project, from, to, ids, repo };
 }
 
 async function main(): Promise<void> {
   const opts = parseArgs();
-  const repoDir = new URL("../../../..", import.meta.url).pathname.replace(/\/$/, "");
+  const workspace = resolveWorkspace({ repo: opts.repo });
+  if (!workspace) {
+    console.error("No a-exp workspace found. Run `a-exp init --project <name>` first, or pass --repo <dir>.");
+    process.exit(1);
+  }
+  const repoDir = workspace.root;
 
   console.log(`Generating ${opts.type} report...`);
   if (opts.project) console.log(`  Project filter: ${opts.project}`);
@@ -56,6 +66,7 @@ async function main(): Promise<void> {
     type: opts.type,
     format: "markdown",
     repoDir,
+    metricsPath: workspace.metricsPath,
     periodFrom: opts.from,
     periodTo: opts.to,
     project: opts.project,

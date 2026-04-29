@@ -3,7 +3,7 @@
  *  Runtime additions via setChannelMode() persist to JSON; env vars take precedence on overlap. */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 export type ChannelMode = "dev" | "chat";
 export type Team = "art" | "product" | "engineering" | "research";
@@ -22,10 +22,7 @@ const channelMap = new Map<string, ChannelMode>();
 const channelTeamMap = new Map<string, Team>();
 let designatedUserId: string | null = null;
 
-const DEFAULT_PERSIST_PATH = new URL(
-  "../../../.scheduler/channel-modes.json",
-  import.meta.url,
-).pathname;
+const DEFAULT_PERSIST_PATH = join(process.cwd(), ".a-exp", "channel-modes.json");
 
 let persistPath: string | null = DEFAULT_PERSIST_PATH;
 

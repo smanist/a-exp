@@ -176,6 +176,7 @@ export interface ReportOptions {
   type: ReportType;
   format: OutputFormat;
   repoDir: string;
+  metricsPath?: string;
   /** ISO date string — start of period. Defaults to 7 days ago. */
   periodFrom?: string;
   /** ISO date string — end of period. Defaults to now. */

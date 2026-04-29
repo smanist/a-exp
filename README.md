@@ -22,9 +22,14 @@ npm install
 npm run build
 cd ../..
 
+./a-exp init --project my-research-project
 ./a-exp add --name "work-cycle" --cron "0 * * * *" --message-default --model gpt-5.2
 ./a-exp start
 ```
+
+When installed as a package, run the same commands from any project repo. `a-exp`
+discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
+`--repo <dir>` when a script or daemon should target a specific repo.
 
 Slack is optional. Configure these variables to enable it:
 
@@ -39,6 +44,7 @@ SLACK_USER_ID=...
 | Component | Purpose |
 |---|---|
 | `AGENTS.md` | Operating contract for agents in this repo |
+| `.a-exp/config.yaml` | Workspace anchor and layout metadata |
 | `infra/scheduler/` | Cron scheduler, session launch, Slack, status, reports |
 | `infra/experiment-runner/` | Fire-and-forget experiment execution with artifacts |
 | `infra/experiment-validator/` | Experiment record validation |
@@ -64,6 +70,16 @@ modules/<module>/
 
 Project directories hold memory and coordination. Module directories hold code and heavy outputs.
 
+Scheduler runtime files are workspace-local and ignored by git:
+
+```text
+.a-exp/jobs.json
+.a-exp/logs/
+.a-exp/metrics/
+.a-exp/channel-modes.json
+.a-exp/model-preference.json
+```
+
 ## Scheduler
 
 The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
@@ -79,12 +95,24 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ./a-exp check-health --notify
 ```
 
+Global workspace override:
+
+```bash
+./a-exp --repo /path/to/project-repo status
+```
+
 Reports are generated with:
 
 ```bash
 cd infra/scheduler
-npx tsx src/report/run-report.ts --type project --project a-exp
+npx tsx src/report/run-report.ts --repo ../.. --type project --project a-exp
 ```
+
+## Self-Hosting Development
+
+This repository is also an initialized a-exp workspace for maintaining a-exp
+itself. The tracked `.a-exp/config.yaml` identifies the source checkout as the
+workspace; generated runtime state under `.a-exp/` remains ignored.
 
 ## Budget Support
 

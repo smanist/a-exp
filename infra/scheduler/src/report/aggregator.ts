@@ -16,6 +16,7 @@ export async function gatherReportData(
   repoDir: string,
   periodFrom?: string,
   periodTo?: string,
+  metricsPath?: string,
 ): Promise<ReportData> {
   const now = new Date();
   const from = periodFrom ?? new Date(now.getTime() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
@@ -23,7 +24,7 @@ export async function gatherReportData(
 
   // Read all data sources in parallel
   const [sessions, budgets, experiments, projects] = await Promise.all([
-    readMetrics({ since: from + "T00:00:00Z" }),
+    readMetrics({ since: from + "T00:00:00Z", metricsPath }),
     readBudgets(repoDir),
     scanExperiments(repoDir),
     readProjects(repoDir),
