@@ -1,0 +1,9 @@
+entries:
+  - project: akari
+    module: akari
+    path: modules/akari
+    type: local-scratch
+  - project: my-research-project
+    module: my-research-project
+    path: modules/my-research-project
+    type: local-scratch

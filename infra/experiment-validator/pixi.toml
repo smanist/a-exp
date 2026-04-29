@@ -1,0 +1,14 @@
+[workspace]
+channels = ["conda-forge"]
+name = "experiment-validator"
+platforms = ["linux-64", "linux-aarch64", "osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+validate = "python validate.py"
+test = "pytest test_validate.py -v"
+
+[dependencies]
+python = "3.12.*"
+pyyaml = ">=6"
+pytest = ">=8"

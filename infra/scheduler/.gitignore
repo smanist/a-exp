@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.scheduler/
+.evolution-state.json
+.last-startup-ms

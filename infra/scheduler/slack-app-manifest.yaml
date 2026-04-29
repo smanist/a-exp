@@ -1,0 +1,34 @@
+# Slack App Manifest for the active DM-only Akari scheduler integration.
+# Import via https://api.slack.com/apps -> "Create New App" -> "From a manifest".
+#
+# After import:
+# 1. Enable Socket Mode
+# 2. Create an app-level token with `connections:write`
+# 3. Install the app to your workspace
+
+display_information:
+  name: Akari
+  description: Akari scheduler DM operator interface
+  background_color: "#2c2d30"
+
+features:
+  bot_user:
+    display_name: Akari
+    always_online: true
+
+oauth_config:
+  scopes:
+    bot:
+      - chat:write
+      - im:history
+      - im:write
+
+settings:
+  event_subscriptions:
+    bot_events:
+      - message.im
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false

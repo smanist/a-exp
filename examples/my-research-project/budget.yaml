@@ -1,0 +1,12 @@
+# Resource and time budget for this project.
+# Adjust limits and resource types to match your research needs.
+
+resources:
+  llm_api_calls:
+    limit: 5000
+    unit: calls
+  gpu_hours:
+    limit: 50
+    unit: hours
+
+deadline: 2026-06-01T00:00:00Z
