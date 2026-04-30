@@ -89,7 +89,7 @@ def extract_paragraph(section: str) -> str:
     return truncate(" ".join(lines))
 
 
-def summarize_markdown_result(path: Path, label: str, max_bullets: int) -> str:
+def summarize_markdown_result(path: Path, max_bullets: int) -> list[str]:
     text = read_text(path)
     findings = extract_bullets(extract_section(text, "Findings"), max_bullets)
     conclusion = extract_paragraph(extract_section(text, "Conclusion"))
@@ -102,8 +102,7 @@ def summarize_markdown_result(path: Path, label: str, max_bullets: int) -> str:
         parts = extract_bullets(result_section, max_bullets)
         if not parts:
             parts = [extract_paragraph(result_section or text)]
-    joined = "; ".join(part for part in parts if part)
-    return f"{label}: {joined or 'no concise result found'}"
+    return [part for part in parts if part] or ["no concise result found"]
 
 
 def token_number(text: str) -> str:
@@ -169,15 +168,22 @@ def find_reports(repo_root: Path, project: str) -> list[Path]:
     return top_reports
 
 
-def cost_card(logs: list[LogSummary], max_items: int) -> str:
+def format_card(done: bool, heading: str, label: str | None, parts: list[str]) -> str:
+    status = "x" if done else " "
+    label_text = f" {label}" if label else ""
+    body = "; <br>".join(parts)
+    return f"- [{status}] **{heading}**{label_text}: <br>{body}"
+
+
+def cost_parts(logs: list[LogSummary], max_items: int) -> list[str]:
     if not logs:
-        return "Cost: no `.a-exp/logs/<project>-*.log` entries found"
-    pieces = []
+        return ["no `.a-exp/logs/<project>-*.log` entries found"]
+    parts = []
     for log in logs[-max_items:]:
-        pieces.append(
+        parts.append(
             f"{log.label}: {log.duration}, {log.tokens} tokens, {log.turns} turns, {log.cost}"
         )
-    return "Cost: " + "; ".join(pieces)
+    return parts
 
 
 def generate_project(repo_root: Path, project_dir: Path, args: argparse.Namespace) -> str:
@@ -194,8 +200,8 @@ def generate_project(repo_root: Path, project_dir: Path, args: argparse.Namespac
 
     lines = [
         f"## {project}-Tasks",
-        f"- [x] Progress: {len(tasks)} in total, {done} done",
-        f"- [x] {cost_card(logs, args.max_cost_items)}",
+        format_card(True, "Progress", None, [f"{len(tasks)} in total, {done} done"]),
+        format_card(True, "Cost", None, cost_parts(logs, args.max_cost_items)),
         "",
         f"## {project}-Results",
     ]
@@ -206,22 +212,30 @@ def generate_project(repo_root: Path, project_dir: Path, args: argparse.Namespac
             text = read_text(path)
             exp_id = parse_frontmatter_id(text, path.parent.name)
             lines.append(
-                "- [x] "
-                + summarize_markdown_result(path, f"Experiment {exp_id}", args.max_result_bullets)
+                format_card(
+                    True,
+                    "Experiment",
+                    exp_id,
+                    summarize_markdown_result(path, args.max_result_bullets),
+                )
             )
     else:
-        lines.append("- [ ] Experiment: no experiment records found")
+        lines.append(format_card(False, "Experiment", None, ["no experiment records found"]))
 
     report_paths = find_reports(repo_root, project)
     if report_paths:
         for path in report_paths:
             report_id = path.stem
             lines.append(
-                "- [x] "
-                + summarize_markdown_result(path, f"Report {report_id}", args.max_result_bullets)
+                format_card(
+                    True,
+                    "Report",
+                    report_id,
+                    summarize_markdown_result(path, args.max_result_bullets),
+                )
             )
     else:
-        lines.append("- [ ] Report: no project reports found")
+        lines.append(format_card(False, "Report", None, ["no project reports found"]))
 
     return "\n".join(lines).rstrip() + "\n"
 
