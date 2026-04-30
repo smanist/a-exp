@@ -22,6 +22,18 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-04-30 (Added packet handoff skill)
+
+Added the `packet` skill for producing implementation-ready algorithm packets from a-exp prototypes, target package instructions, prototype code, experiments, reports, and project memory. The skill writes packets under `reports/packet/` by default and uses the target package's API conventions rather than prototype code style as the integration source of truth.
+
+Verification:
+- `python /Users/daninghuang/.codex/skills/.system/skill-creator/scripts/quick_validate.py .agents/skills/packet`: passed, skill is valid.
+
+Files:
+- `.agents/skills/packet/SKILL.md`
+- `.agents/skills/packet/agents/openai.yaml`
+- `projects/a-exp/README.md`
+
 ### 2026-04-29 (Fixed status daemon detection)
 
 Changed `a-exp status` to derive daemon state from the workspace `.a-exp/scheduler.pid` lockfile instead of always reporting `stopped`. The pid check now treats `EPERM` from `process.kill(pid, 0)` as evidence that the process exists.

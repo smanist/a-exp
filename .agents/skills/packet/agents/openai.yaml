@@ -1,0 +1,4 @@
+interface:
+  display_name: "Packet"
+  short_description: "Create implementation packets from prototypes"
+  default_prompt: "Use $packet to summarize an a-exp prototype for implementation in another package."
