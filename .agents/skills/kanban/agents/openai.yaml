@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kanban"
+  short_description: "Compress project progress into Obsidian-ready Markdown"
+  default_prompt: "Use $kanban to generate compressed project summaries for Obsidian kanban review."
