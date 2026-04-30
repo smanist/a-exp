@@ -28,12 +28,12 @@ Use exactly two sections per project:
 
 ```markdown
 ## <project>-Tasks
-- [x] **Progress**: <br><total> in total, <done> done
-- [x] **Cost**: <br><task/session label>: <seconds>s, <tokens> tokens, <turns> turns, <cost>; <br>...
+- [x] **Progress**: <br>- <total> in total, <done> done
+- [x] **Cost**: <br>- <task/session label>: <seconds>s, <tokens> tokens, <turns> turns, <cost>; <br>- ...
 
 ## <project>-Results
-- [x] **Experiment** <experiment-id>: <br><key result>; <br><key finding>; <br><artifact/result pointer if useful>
-- [x] **Report** <report-id>: <br><key finding>; <br><conclusion>
+- [x] **Experiment** <experiment-id>: <br>- <key result>; <br>- <key finding>; <br>- <artifact/result pointer if useful>
+- [x] **Report** <report-id>: <br>- <key finding>; <br>- <conclusion>
 ```
 
 Use `[x]` for generated summary cards. Use `[ ]` only when the card represents a missing source, unresolved question, or incomplete project item that should remain visibly open in Obsidian.
@@ -42,7 +42,7 @@ Use `[x]` for generated summary cards. Use `[ ]` only when the card represents a
 
 - Prefer numbers over adjectives: `mean RMSE 0.483517` is better than `performed best`.
 - Preserve identifiers: task titles, experiment IDs, report filenames, artifact paths, dates, and metric names.
-- Summarize each experiment or report in one checklist item. Bold the card type (`**Progress**`, `**Cost**`, `**Experiment**`, `**Report**`) and separate compressed bullet fragments with literal `<br>` tags inside the card.
+- Summarize each experiment or report in one checklist item. Bold the card type (`**Progress**`, `**Cost**`, `**Experiment**`, `**Report**`) and separate compressed bullet fragments with literal `<br>- ` tags inside the card.
 - If a source has a `## Findings` section, prefer those bullets over earlier design or protocol sections.
 - If a report has a `## Conclusion` section, include the conclusion unless it duplicates the findings.
 - Do not invent cost attribution. If a log cannot be matched to a task, label it as a session using the log timestamp.

@@ -171,8 +171,8 @@ def find_reports(repo_root: Path, project: str) -> list[Path]:
 def format_card(done: bool, heading: str, label: str | None, parts: list[str]) -> str:
     status = "x" if done else " "
     label_text = f" {label}" if label else ""
-    body = "; <br>".join(parts)
-    return f"- [{status}] **{heading}**{label_text}: <br>{body}"
+    body = "; <br>- ".join(parts)
+    return f"- [{status}] **{heading}**{label_text}: <br>- {body}"
 
 
 def cost_parts(logs: list[LogSummary], max_items: int) -> list[str]:
