@@ -4,7 +4,7 @@ a-exp is a small repository interface for recurring AI research sessions. It kee
 
 - cron-style scheduled sessions
 - Slack operator interface
-- project memory and decomposed tasks
+- project memory and bounded task units
 - project scaffolding
 - experiment records and reports
 - lightweight budget status

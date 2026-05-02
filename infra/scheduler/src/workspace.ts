@@ -261,7 +261,7 @@ The kit commit is recorded in \`.a-exp/kit.lock.yaml\`. If a symlink is broken, 
 - \`.agents/skills/\` exposes local a-exp skills from \`../a-exp\`.
 - \`docs/\` exposes schemas and conventions from \`../a-exp\`.
 - \`projects/${project}/README.md\` records mission, context, log, and open questions.
-- \`projects/${project}/TASKS.md\` records decomposed next actions.
+- \`projects/${project}/TASKS.md\` records bounded next actions.
 - \`projects/${project}/budget.yaml\` declares lightweight resource limits when needed.
 - \`projects/${project}/ledger.yaml\` records declared usage when needed.
 - \`projects/${project}/plans/\` holds non-trivial plans.
@@ -275,8 +275,8 @@ The kit commit is recorded in \`.a-exp/kit.lock.yaml\`. If a symlink is broken, 
 ## Work Cycle
 
 1. Read \`projects/${project}/README.md\` and \`projects/${project}/TASKS.md\`.
-2. Select an unblocked task with a concrete \`Done when\`.
-3. Make the smallest change that satisfies the task.
+2. Select an unblocked task with concrete \`Done when\` criteria.
+3. Make the smallest cohesive change that satisfies the task.
 4. Verify with the narrowest useful tests or checks.
 5. Update the project log with what changed and the exact verification command.
 6. Commit the completed logical unit.
@@ -301,6 +301,19 @@ Tasks use this shape:
   Done when: Mechanically verifiable completion condition.
   Priority: high|medium|low
 \`\`\`
+
+Tasks may also use multiple \`Done when\` criteria when a mid-sized task has several acceptance checks:
+
+\`\`\`markdown
+- [ ] Imperative task title
+  Why: Why this matters.
+  Done when:
+  - Mechanically verifiable completion condition.
+  - Another mechanically verifiable completion condition.
+  Priority: high|medium|low
+\`\`\`
+
+Prefer mid-sized coherent tasks by default. Split tasks only when the pieces are independently useful, independently verifiable, require separate approvals or resources, or are unlikely to fit in one agent session. If the user asks for finer or coarser decomposition during scaffolding or task creation, honor that request when each resulting task remains bounded and verifiable.
 
 Use \`[blocked-by: ...]\` only for conditions outside agent control, such as missing credentials or explicit human approval.
 
@@ -351,7 +364,7 @@ Done when: A final report answers the project question and links to supporting e
 
 ## Context
 
-Use this directory for project memory, plans, task decomposition, experiment records, and lightweight budget records. Put project-owned code and heavy outputs under \`modules/${project}/\`.
+Use this directory for project memory, plans, bounded task units, experiment records, and lightweight budget records. Put project-owned code and heavy outputs under \`modules/${project}/\`.
 
 ## Log
 
@@ -373,7 +386,9 @@ function defaultTasks(project: string): string {
 
 - [ ] Define the project question
   Why: The scaffold needs a concrete goal before experiments can be designed.
-  Done when: \`projects/${project}/README.md\` has a specific mission and done-when condition.
+  Done when:
+  - \`projects/${project}/README.md\` has a specific mission and done-when condition.
+  - \`projects/${project}/TASKS.md\` has mid-sized follow-up tasks matching that mission.
   Priority: high
 `;
 }

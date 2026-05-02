@@ -10,7 +10,7 @@ Done when: Scheduler, Slack, project memory, reports, budgets, and experiment to
 This support project tracks work on a-exp itself. The repo was trimmed to keep only the components the user identified as necessary:
 
 - cron scheduler
-- project creation with decomposed tasks
+- project creation with bounded task units
 - automatic project extension/exploration through orient-style workflows
 - repo memory
 - experiment records and reports
@@ -21,6 +21,25 @@ This support project tracks work on a-exp itself. The repo was trimmed to keep o
 Historical research projects and heavy governance history are intentionally removed from the core branch.
 
 ## Log
+
+### 2026-05-02 (Switched task policy to mid-sized units)
+
+Updated the core task policy, scaffold guidance, orient task-supply rules, and examples to prefer mid-sized coherent tasks with optional multi-bullet `Done when` criteria. Task granularity now honors user requests for finer or coarser decomposition when each task remains bounded and verifiable. Added a report parser regression test and a kanban parser note so acceptance checklists are not counted as separate tasks.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 10 tests.
+- `python -c "import importlib.util, sys, tempfile, pathlib; p=pathlib.Path('.agents/skills/kanban/scripts/generate_kanban.py'); spec=importlib.util.spec_from_file_location('gk', p); m=importlib.util.module_from_spec(spec); sys.modules['gk']=m; spec.loader.exec_module(m); d=pathlib.Path(tempfile.mkdtemp()); f=d/'TASKS.md'; f.write_text('# Tasks\n\n- [ ] Ship mid-sized task\n  Why: test\n  Done when:\n  - [ ] Build passes\n  - [ ] Report shows one task\n  Priority: high\n', encoding='utf-8'); tasks=m.parse_tasks(f); print(len(tasks), tasks[0].title if tasks else '')"`: printed `1 Ship mid-sized task`.
+- `rg -n 'small tasks|decomposed next actions|decomposed tasks|decomposed task|3-5 bootstrapping|>2 independent|>3 files|mixed mechanical|multiple fleet-eligible|single complex|smallest change|task decomposition' AGENTS.md README.md docs .agents infra/scheduler/src examples projects/a-exp -S`: no matches.
+
+Files:
+- `AGENTS.md`
+- `docs/conventions/task-lifecycle.md`
+- `docs/schemas/task.md`
+- `.agents/skills/`
+- `infra/scheduler/src/workspace.ts`
+- `infra/scheduler/src/core.test.ts`
+- `examples/my-research-project/TASKS.md`
 
 ### 2026-04-30 (Added packet handoff skill)
 

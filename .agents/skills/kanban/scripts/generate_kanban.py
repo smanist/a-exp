@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+# Match only top-level task items. Indented `Done when` checklist bullets should
+# remain acceptance criteria, not separate kanban tasks.
 TASK_RE = re.compile(r"^- \[([ xX])\]\s+(.+?)\s*$")
 
 

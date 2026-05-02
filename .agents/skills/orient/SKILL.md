@@ -238,9 +238,9 @@ Extract all unblocked tasks from `TASKS.md` files. For each task, assess:
 
 **Priority tiebreaker:** Within tasks at the same criterion level, prefer `Priority: high` > `Priority: medium` > `Priority: low` > untagged.
 
-**Decomposition scan (ADR 0045):** While scanning tasks, check for decomposition opportunities:
+**Decomposition scan (ADR 0045):** While scanning tasks, check for decomposition opportunities without automatically splitting mid-sized work:
 1. **Requires-frontier tasks**: If your repo uses routing tags, tasks tagged `[requires-frontier]` need higher-capability handling. Check if they're correctly scoped.
-2. **Decomposable tasks**: Any task with >2 independent steps, >3 files, or mixed mechanical+judgment work should be decomposed into smaller subtasks.
+2. **Decomposable tasks**: Prefer mid-sized coherent tasks. Split only when the parts are independently useful, independently verifiable, require separate approvals or resources, or are unlikely to fit in one agent session.
 3. **Report in output**: Include any task-supply or decomposition updates you made.
 
 Do NOT recommend tasks from:
@@ -261,7 +261,7 @@ Task generation is a primary output of orient, not just a side effect. If you no
 
 **Generation procedure (apply relevant sources, write tasks directly to TASKS.md):**
 1. **Unblock stale blockers**: Find `[blocked-by: ...]` tags where the referenced condition is now resolved (prerequisite task marked `[x]`, infrastructure issue fixed, time gate passed). Remove the tag.
-2. **Decompose broad tasks**: Split tasks with >2 independent steps into smaller subtasks. If your repo uses routing tags, retain or refine the tags as appropriate.
+2. **Adjust task granularity**: Prefer mid-sized coherent tasks with one or more mechanical `Done when` criteria. Split broad tasks only when the pieces are independently useful/verifiable, need separate approval or resource gates, or are unlikely to fit in one session. Merge over-fragmented adjacent tasks when they form one cohesive outcome. If a human specified finer or coarser decomposition, preserve that granularity when the resulting tasks remain bounded and verifiable.
 3. **Extract preparatory work from blocked tasks**: For blocked tasks, identify prerequisite setup that is NOT blocked (directory creation, config files, script stubs, documentation). Create subtasks for these preparatory steps.
 4. **Create follow-up tasks from recent completions**: Scan recently completed tasks (`[x]`) for implied follow-up work: validation of completed implementation, documentation updates, cross-project propagation, analysis of new artifacts.
 5. **Create project maintenance tasks**: Add tasks for compliance audits (`Run /self-audit on <project>`) — but **only for projects not audited in the last 7 days**. Check by running `ls projects/*/diagnosis/compliance-audit-*.md 2>/dev/null` and extracting dates from filenames (YYYY-MM-DD pattern). Skip projects with recent audits. Also add documentation updates, test coverage, or cross-project analysis per standing inventory.
@@ -271,16 +271,16 @@ After generating, report what changed in the task supply.
 
 ### Decomposition procedure
 
-Apply the decomposition procedure from [docs/conventions/task-lifecycle.md](../../../../docs/conventions/task-lifecycle.md) — write subtasks directly to TASKS.md, splitting along mechanical/judgment boundaries.
+Apply the granularity procedure from [docs/conventions/task-lifecycle.md](../../../../docs/conventions/task-lifecycle.md) — write task changes directly to TASKS.md. Use multi-bullet `Done when` criteria for mid-sized tasks instead of splitting solely because a task has several checks.
 
 ### Report
 
 Include a "Decomposition" subsection in the output:
 ```
 ### Decomposition
-<N tasks scanned, M decomposable. K subtasks written to TASKS.md.>
-<list each decomposition with subtasks>
-<or "no decomposition opportunities found">
+<N tasks scanned, M granularity changes. K tasks written or rewritten in TASKS.md.>
+<list each split or merge>
+<or "no granularity changes needed">
 ```
 
 ## Claim task

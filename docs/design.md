@@ -8,7 +8,7 @@ recurring agent sessions.
 LLM sessions are stateless. The repo stores what a continuing research assistant needs to know:
 
 - project missions and logs
-- decomposed tasks
+- bounded task units
 - plans and decisions
 - experiment records
 - artifact locations

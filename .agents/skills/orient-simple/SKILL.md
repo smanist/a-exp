@@ -37,7 +37,7 @@ While reading TASKS.md files (Step 2), verify that `[requires-frontier]` tags ar
 **Tag `[requires-frontier]` if ANY true:**
 1. NOT self-contained (needs multi-file context beyond task text + project README)
 2. Unclear done-when condition (requires judgment to verify)
-3. Multiple concerns ("do X, then Y, then Z")
+3. Multiple unrelated concerns ("do X, then Y, then Z" across separate outcomes)
 4. Deep reasoning required (synthesis, strategic decisions, multi-step planning)
 5. Convention changes (modifies AGENTS.md, decisions/, or infra/)
 
@@ -49,11 +49,11 @@ If task supply is thin, improve it before proceeding. In repos that enable fleet
 
 **How to generate (in order):**
 1. Remove stale `[blocked-by: ...]` tags where the referenced condition is resolved (prerequisite task already completed)
-2. **Decompose `[requires-frontier]` tasks** that have >2 independent steps, >3 files, or mix mechanical + judgment work. Split into smaller subtasks. **Write subtasks directly to TASKS.md** — replace the original task with its subtasks. Do NOT just flag or propose — proposals die with the session.
+2. **Adjust task granularity** for `[requires-frontier]` tasks. Prefer mid-sized coherent tasks with one or more mechanical `Done when` criteria. Split only when the pieces are independently useful/verifiable, need separate approval or resource gates, or are unlikely to fit in one session. Merge over-fragmented adjacent tasks when they form one cohesive outcome. **Write task changes directly to TASKS.md** — do NOT just flag or propose, because proposals die with the session.
 3. Create maintenance tasks: `Run /self-audit on <project>` for projects that haven't been audited in the last 7 days. To check: run `ls projects/*/diagnosis/compliance-audit-*.md 2>/dev/null | xargs -I{} basename {}` to list audit files. Extract dates from filenames (pattern: YYYY-MM-DD). Skip projects with audits within 7 days of today.
 4. Create documentation or analysis tasks from standing inventory (see AGENTS.md "Fleet supply maintenance")
 
-Decomposition is also valuable even when task supply looks healthy.
+Granularity cleanup is also valuable even when task supply looks healthy.
 
 After generating, report what changed.
 
@@ -107,10 +107,10 @@ Output a single line in this format:
 Selected: <task description> (project: <name>, priority: <level>, score: <N>)
 ```
 
-If you tagged any untagged tasks during Step 3 or decomposed tasks during Step 4, add a line:
+If you tagged any untagged tasks during Step 3 or adjusted task granularity during Step 4, add a line:
 
 ```
-Task supply updates: N tasks tagged or re-tagged. D tasks decomposed.
+Task supply updates: N tasks tagged or re-tagged. D task granularity changes.
 ```
 
 ## Common patterns

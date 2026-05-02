@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
 import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
+import { parseProjectReadme } from "./report/data-projects.js";
 import { computeNextRunAtMs } from "./schedule.js";
 import { JobStore } from "./store.js";
 import { findWorkspaceRoot, initWorkspace, resolveWorkspace, workspacePaths } from "./workspace.js";
@@ -90,6 +91,30 @@ describe("a-exp core scheduler", () => {
     } finally {
       await rm(parent, { recursive: true, force: true });
     }
+  });
+
+  it("parses report tasks without treating multi-bullet Done when criteria as tasks", () => {
+    const parsed = parseProjectReadme(
+      `# Demo
+
+Status: active
+Mission: Test report parsing.
+Done when: Reports stay readable.
+
+## Next actions
+
+- [ ] Ship a mid-sized task
+  Why: The task has multiple acceptance checks.
+  Done when:
+  - [ ] Build passes.
+  - [ ] Report output contains one open task.
+  Priority: high
+`,
+      "demo",
+    );
+
+    expect(parsed.tasks).toHaveLength(1);
+    expect(parsed.tasks[0].text).toBe("Ship a mid-sized task");
   });
 
   it("requires non-self-hosting workspaces to be parallel to an a-exp kit", async () => {

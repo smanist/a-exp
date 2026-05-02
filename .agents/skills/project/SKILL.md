@@ -208,7 +208,8 @@ Ask clarifying questions to fill gaps. Adapt to what the description already cov
 5. **CI layers** — only if the human is familiar with the CI framework
 6. **Connection to existing work** — check `projects/` for potential connections
 7. **Initial tasks** — does the human have first steps in mind?
-8. **Context** — background reading, prior art, existing data?
+8. **Task granularity** — should the scaffold use coarse, mid-sized, fine, or manually provided task splits?
+9. **Context** — background reading, prior art, existing data?
 
 **Interview protocol:**
 - Ask in batches of 2-3, not all at once
@@ -258,15 +259,15 @@ Sources: none (project creation)
 ```markdown
 # <Project Title> — Tasks
 
-<Human-provided tasks, or 3-5 bootstrapping tasks:>
+<Human-provided tasks, or 2-3 mid-sized bootstrapping tasks. If the human requested finer or coarser decomposition, honor that request when each task remains bounded and verifiable. Use multi-bullet `Done when` criteria when one task has several acceptance checks.>
 
 Research project:
-- [ ] Literature review on <topic>
-- [ ] Design first experiment
+- [ ] Establish research context and first experiment design
+- [ ] Run and report first experiment
 
 Operational project:
-- [ ] Define requirements and constraints
-- [ ] Survey existing tools and approaches
+- [ ] Define requirements, constraints, and implementation plan
+- [ ] Implement and verify the first usable capability
 ```
 
 **budget.yaml + ledger.yaml** — only if the human indicated resource consumption.
