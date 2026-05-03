@@ -1,9 +1,11 @@
-import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 
+import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExecJsonState, getBackend, parseCodexMessage } from "./backend.js";
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
+import { executeJob } from "./executor.js";
 import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
 import { parseProjectReadme } from "./report/data-projects.js";
@@ -172,6 +174,88 @@ Done when: Reports stay readable.
       expect(getDaemonStateFromLockfile(lockfile)).toBe("stopped");
     } finally {
       await rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("marks Codex JSON error events as failed results", () => {
+    const errorState = createCodexExecJsonState();
+    consumeCodexExecJsonMessage(errorState, { type: "error", message: "startup failed" });
+    expect(finalizeCodexExecJsonState(errorState)).toMatchObject({
+      ok: false,
+      text: "startup failed",
+    });
+
+    const failedTurnState = createCodexExecJsonState();
+    consumeCodexExecJsonMessage(failedTurnState, { type: "turn.failed", error: { message: "turn crashed" } });
+    expect(finalizeCodexExecJsonState(failedTurnState)).toMatchObject({
+      ok: false,
+      text: "turn crashed",
+    });
+
+    expect(parseCodexMessage(JSON.stringify({ type: "turn.failed", error: { message: "turn crashed" } }))).toMatchObject({
+      type: "result",
+      is_error: true,
+      result: "turn crashed",
+    });
+  });
+
+  it("rejects non-zero Codex exits even when stderr has output", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "a-exp-codex-fail-"));
+    const oldCodexBin = process.env["CODEX_BIN"];
+    try {
+      const bin = join(dir, "fake-codex.js");
+      await writeFile(
+        bin,
+        "#!/usr/bin/env node\nprocess.stderr.write('startup denied\\n');\nprocess.exit(2);\n",
+        "utf-8",
+      );
+      await chmod(bin, 0o755);
+      process.env["CODEX_BIN"] = bin;
+
+      await expect(getBackend("codex").runQuery({ prompt: "hello", cwd: dir })).rejects.toThrow(
+        /codex exited with code 2: startup denied/,
+      );
+    } finally {
+      if (oldCodexBin === undefined) delete process.env["CODEX_BIN"];
+      else process.env["CODEX_BIN"] = oldCodexBin;
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("marks scheduled jobs failed when Codex emits a JSON error event", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "a-exp-codex-json-error-"));
+    const oldCodexBin = process.env["CODEX_BIN"];
+    try {
+      const bin = join(dir, "fake-codex.js");
+      await writeFile(
+        bin,
+        "#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ type: 'error', message: 'startup failed' }) + '\\n');\n",
+        "utf-8",
+      );
+      await chmod(bin, 0o755);
+      process.env["CODEX_BIN"] = bin;
+
+      const result = await executeJob(
+        {
+          id: "codex-json-error",
+          name: "codex-json-error",
+          schedule: { kind: "every", everyMs: 60_000 },
+          payload: { message: "hello", cwd: dir, maxDurationMs: 1_000 },
+          enabled: true,
+          createdAtMs: Date.now(),
+          state: { nextRunAtMs: null, lastRunAtMs: null, lastStatus: null, lastError: null, lastDurationMs: null, runCount: 0 },
+        },
+        "manual",
+        { logsDir: join(dir, "logs") },
+      );
+
+      expect(result.ok).toBe(false);
+      expect(result.exitCode).toBe(1);
+      expect(result.error).toBe("startup failed");
+    } finally {
+      if (oldCodexBin === undefined) delete process.env["CODEX_BIN"];
+      else process.env["CODEX_BIN"] = oldCodexBin;
+      await rm(dir, { recursive: true, force: true });
     }
   });
 

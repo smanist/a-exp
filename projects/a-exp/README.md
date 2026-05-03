@@ -22,6 +22,21 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-03 (Fixed Codex startup failure classification)
+
+Fixed scheduler Codex failure handling so `type: "error"` and `turn.failed` JSONL events mark the backend result as failed, non-zero Codex process exits reject even when stderr has text, and backend `ok: false` propagates through agent and job execution status. Added regressions for ignored JSON error events, stderr-bearing non-zero exits, and scheduled jobs that receive Codex JSON error events.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 13 tests.
+
+Files:
+- `infra/scheduler/src/backend.ts`
+- `infra/scheduler/src/agent.ts`
+- `infra/scheduler/src/executor.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-02 (Switched task policy to mid-sized units)
 
 Updated the core task policy, scaffold guidance, orient task-supply rules, and examples to prefer mid-sized coherent tasks with optional multi-bullet `Done when` criteria. Task granularity now honors user requests for finer or coarser decomposition when each task remains bounded and verifiable. Added a report parser regression test and a kanban parser note so acceptance checklists are not counted as separate tasks.

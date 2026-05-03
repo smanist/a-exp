@@ -102,6 +102,23 @@ export function parseCodexMessage(line: string): SDKMessage | null {
   }
 }
 
+function extractCodexErrorText(parsed: Record<string, unknown>): string {
+  const direct = parsed.message ?? parsed.error_message ?? parsed.reason ?? parsed.details;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+
+  const error = parsed.error;
+  if (typeof error === "string" && error.trim()) return error.trim();
+  if (error && typeof error === "object") {
+    const err = error as Record<string, unknown>;
+    const message = err.message ?? err.error_message ?? err.reason ?? err.details;
+    if (typeof message === "string" && message.trim()) return message.trim();
+    const code = err.code ?? err.type;
+    if (typeof code === "string" && code.trim()) return code.trim();
+  }
+
+  return "";
+}
+
 function parseCodexMessageObject(msg: unknown): SDKMessage | null {
   try {
     if (!msg || typeof msg !== "object") return null;
@@ -165,6 +182,19 @@ function parseCodexMessageObject(msg: unknown): SDKMessage | null {
       };
     }
 
+    if (type === "error" || type === "turn.failed") {
+      return {
+        type: "result",
+        subtype: "error",
+        duration_ms: typeof parsed.duration_ms === "number" ? parsed.duration_ms : Number(parsed.durationMs ?? 0),
+        is_error: true,
+        result: extractCodexErrorText(parsed),
+        session_id: String(parsed.session_id ?? parsed.sessionId ?? parsed.thread_id ?? parsed.threadId ?? parsed.id ?? ""),
+        total_cost_usd: typeof parsed.total_cost_usd === "number" ? parsed.total_cost_usd : 0,
+        num_turns: typeof parsed.num_turns === "number" ? parsed.num_turns : 0,
+      };
+    }
+
     if (type === "tool_use" || type === "tool_call") {
       const tool = parsed.tool as Record<string, unknown> | undefined;
       const part = parsed.part as Record<string, unknown> | undefined;
@@ -207,6 +237,7 @@ export type CodexExecJsonState = {
   toolFallbackCommandCount: number;
   toolFallbackTruncated: boolean;
   isError: boolean;
+  errorText: string;
 };
 
 const CODEX_TOOL_FALLBACK_MAX_CHARS = 20_000;
@@ -228,6 +259,7 @@ export function createCodexExecJsonState(): CodexExecJsonState {
     toolFallbackCommandCount: 0,
     toolFallbackTruncated: false,
     isError: false,
+    errorText: "",
   };
 }
 
@@ -242,6 +274,12 @@ export function consumeCodexExecJsonMessage(state: CodexExecJsonState, raw: unkn
   }
   if (type === "turn.started") {
     state.turnStartedCount += 1;
+    return;
+  }
+  if (type === "error" || type === "turn.failed") {
+    state.isError = true;
+    const errorText = extractCodexErrorText(msg);
+    if (errorText) state.errorText = errorText;
     return;
   }
   if (type === "turn.completed") {
@@ -343,7 +381,7 @@ export function finalizeCodexExecJsonState(state: CodexExecJsonState): {
   };
 } {
   const text = (state.reportedText ?? state.assistantText).trim();
-  const finalText = text || state.toolFallbackText.trim();
+  const finalText = text || state.errorText.trim() || state.toolFallbackText.trim();
   const numTurns = state.reportedTurns && state.reportedTurns > 0
     ? state.reportedTurns
     : (state.turnCompletedCount || state.turnStartedCount || state.assistantMessageCount);
@@ -482,8 +520,9 @@ abstract class BaseCodexBackend implements AgentBackend {
         const durationMs = Date.now() - start;
         const finalized = finalizeCodexExecJsonState(streamState);
         const finalText = finalized.text || stderr.trim();
-        if (code !== 0 && !finalText) {
-          reject(new Error(`${this.name} exited with code ${code}${stderr ? `: ${stderr.slice(0, 500)}` : ""}`));
+        if (code !== 0) {
+          const detail = stderr.trim() || finalText;
+          reject(new Error(`${this.name} exited with code ${code}${detail ? `: ${detail.slice(0, 500)}` : ""}`));
           return;
         }
         resolve({
