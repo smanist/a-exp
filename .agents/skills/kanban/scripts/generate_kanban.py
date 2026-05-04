@@ -107,6 +107,35 @@ def summarize_markdown_result(path: Path, max_bullets: int) -> list[str]:
     return [part for part in parts if part] or ["no concise result found"]
 
 
+def extract_numbered_section(text: str, heading: str) -> str:
+    pattern = re.compile(
+        rf"(?ims)^##\s+(?:\d+\.\s+)?{re.escape(heading)}\s*$\n(?P<body>.*?)(?=^##\s+|\Z)"
+    )
+    match = pattern.search(text)
+    return match.group("body").strip() if match else ""
+
+
+def first_summary_fragment(section: str) -> str:
+    bullets = extract_bullets(section, 1)
+    if bullets:
+        return bullets[0]
+    return extract_paragraph(section)
+
+
+def summarize_packet(path: Path, max_bullets: int) -> list[str]:
+    text = read_text(path)
+    parts = []
+    for heading in ["Purpose", "Verified Behavior", "Test Plan", "Implementation Risks"]:
+        fragment = first_summary_fragment(extract_numbered_section(text, heading))
+        if fragment:
+            parts.append(fragment)
+        if len(parts) >= max_bullets:
+            break
+    if not parts:
+        parts = summarize_markdown_result(path, max_bullets)
+    return [part for part in parts if part] or ["no concise packet summary found"]
+
+
 def token_number(text: str) -> str:
     return text.replace(",", "")
 
@@ -157,7 +186,14 @@ def find_reports(repo_root: Path, project: str) -> list[Path]:
     top_reports = []
     all_projects = [p.name for p in (repo_root / "projects").iterdir() if p.is_dir()]
     for path in sorted((repo_root / "reports").glob("**/*.md")):
-        if "kanban" in path.parts:
+        report_parts = path.relative_to(repo_root / "reports").parts
+        if report_parts and report_parts[0] in {
+            "kanban",
+            "packet",
+            "packets",
+            "promo-packets",
+            "promo_packets",
+        }:
             continue
         text = read_text(path)
         if (
@@ -168,6 +204,44 @@ def find_reports(repo_root: Path, project: str) -> list[Path]:
         ):
             top_reports.append(path)
     return top_reports
+
+
+def packet_references_project(path: Path, text: str, project: str, all_projects: list[str]) -> bool:
+    stem = path.stem.lower()
+    project_lower = project.lower()
+    return (
+        stem == project_lower
+        or stem.startswith(project_lower + "-")
+        or stem.startswith(project_lower + "_")
+        or f"Project: `{project}`" in text
+        or f"Project: {project}" in text
+        or f"projects/{project}/" in text
+        or f"modules/{project}/" in text
+        or (len(all_projects) == 1 and path.name != ".gitkeep")
+    )
+
+
+def find_packets(repo_root: Path, project: str) -> list[Path]:
+    packet_dirs = [
+        repo_root / "reports" / "packet",
+        repo_root / "reports" / "packets",
+        repo_root / "reports" / "promo-packets",
+        repo_root / "reports" / "promo_packets",
+    ]
+    all_projects = [p.name for p in (repo_root / "projects").iterdir() if p.is_dir()]
+    packets = []
+    seen = set()
+    for packet_dir in packet_dirs:
+        if not packet_dir.is_dir():
+            continue
+        for path in sorted(packet_dir.glob("**/*.md")):
+            if path in seen or path.name == ".gitkeep":
+                continue
+            text = read_text(path)
+            if packet_references_project(path, text, project, all_projects):
+                packets.append(path)
+                seen.add(path)
+    return packets
 
 
 def format_card(done: bool, heading: str, label: str | None, parts: list[str]) -> str:
@@ -238,6 +312,19 @@ def generate_project(repo_root: Path, project_dir: Path, args: argparse.Namespac
             )
     else:
         lines.append(format_card(False, "Report", None, ["no project reports found"]))
+
+    packet_paths = find_packets(repo_root, project)
+    if packet_paths:
+        lines.extend(["", f"## {project}-Packets"])
+        for path in packet_paths:
+            lines.append(
+                format_card(
+                    True,
+                    "Packet",
+                    path.stem,
+                    summarize_packet(path, args.max_result_bullets),
+                )
+            )
 
     return "\n".join(lines).rstrip() + "\n"
 

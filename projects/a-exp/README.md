@@ -22,6 +22,20 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-04 (Added packet summaries to kanban output)
+
+Augmented the kanban skill and generator so matching packet Markdown under `reports/packet/`, `reports/packets/`, or promo packet directories adds an optional `## <project>-Packets` section with one compact packet card per file. Packet directories are now excluded from generic report summaries to avoid duplicate report cards.
+
+Verification:
+- `python -c "import ast, pathlib; ast.parse(pathlib.Path('.agents/skills/kanban/scripts/generate_kanban.py').read_text())"`: passed.
+- `python -c "import argparse, importlib.util, pathlib, sys, tempfile; sys.dont_write_bytecode=True; p=pathlib.Path('.agents/skills/kanban/scripts/generate_kanban.py'); spec=importlib.util.spec_from_file_location('gk', p); m=importlib.util.module_from_spec(spec); sys.modules['gk']=m; spec.loader.exec_module(m); root=pathlib.Path(tempfile.mkdtemp(dir='/private/tmp')); project=root/'projects'/'demo'; packet_dir=root/'reports'/'packet'; project.mkdir(parents=True); packet_dir.mkdir(parents=True); (project/'TASKS.md').write_text('- [x] Build packet support\n', encoding='utf-8'); (packet_dir/'demo-to-target-solver.md').write_text('# Algorithm Implementation Packet: Solver\n\n## 1. Purpose\n\nPort demo solver into target.\n\n## 4. Verified Behavior\n\n- RMSE 0.12 on fixture\n\n## 8. Test Plan\n\n- Add regression test\n', encoding='utf-8'); out=m.generate_project(root, project, argparse.Namespace(max_cost_items=2, max_result_bullets=3)); print(out)"`: printed a `## demo-Packets` section and did not duplicate the packet as a report.
+- `python .agents/skills/kanban/scripts/generate_kanban.py --repo-root . --dry-run --max-cost-items 1 --max-result-bullets 2`: passed; current repo output has no packet section because no matching packets exist.
+
+Files:
+- `.agents/skills/kanban/SKILL.md`
+- `.agents/skills/kanban/scripts/generate_kanban.py`
+- `projects/a-exp/README.md`
+
 ### 2026-05-03 (Fixed Codex startup failure classification)
 
 Fixed scheduler Codex failure handling so `type: "error"` and `turn.failed` JSONL events mark the backend result as failed, non-zero Codex process exits reject even when stderr has text, and backend `ok: false` propagates through agent and job execution status. Added regressions for ignored JSON error events, stderr-bearing non-zero exits, and scheduled jobs that receive Codex JSON error events.
