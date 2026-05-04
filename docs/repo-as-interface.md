@@ -13,7 +13,7 @@ An agent should be able to:
 
 1. Read `AGENTS.md`.
 2. Read a project's `README.md` and `TASKS.md`.
-3. Select or create a decomposed task.
+3. Select or create a bounded task.
 4. Update project memory as it works.
 5. Use `a-exp` for scheduled sessions and status.
 6. Use experiment tooling for long-running work.

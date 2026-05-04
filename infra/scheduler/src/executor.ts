@@ -152,6 +152,7 @@ export async function executeJob(
       jobName: job.name,
     });
     const agentResult = await result;
+    const executionOk = agentResult.ok && !agentResult.timedOut && !agentResult.sleepViolation && !agentResult.stallViolation;
     const logFile = await writeExecutionLog({
       jobName: job.name,
       runtime,
@@ -160,10 +161,11 @@ export async function executeJob(
       logsDir,
     });
     const execution: ExecutionResult = {
-      ok: !agentResult.timedOut && !agentResult.sleepViolation && !agentResult.stallViolation,
+      ok: executionOk,
       durationMs: agentResult.durationMs,
-      exitCode: agentResult.timedOut ? 124 : 0,
+      exitCode: agentResult.timedOut ? 124 : (executionOk ? 0 : 1),
       stdout: agentResult.text,
+      error: executionOk ? undefined : (agentResult.text || "Agent reported an error"),
       logFile,
       costUsd: agentResult.costUsd,
       numTurns: agentResult.numTurns,

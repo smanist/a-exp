@@ -109,14 +109,14 @@ For each file: check if recommendations are relevant to this session's area, tri
 1. Extract sections via `RECOMMENDATION_HEADER_RE` pattern
 2. Parse numbered/bulleted items as separate recommendations
 3. Skip non-actionable items ("Do not", purely observational, no action verb)
-4. Format as tasks: `- [ ] <imperative> [zero-resource] Why: From <exp-id> — <summary> Done when: <condition>`
+4. Format as tasks with mechanical acceptance criteria. Use single-line `Done when: <condition>` for simple tasks, or a multi-bullet `Done when:` checklist for mid-sized tasks.
 5. Deduplicate against existing TASKS.md entries (experiment-id in Why field, or >50% keyword overlap)
 6. Present candidates for agent review — do not auto-append
 7. Mark processed: `<!-- Recommendations surfaced: YYYY-MM-DD -->`
 
 **Anti-loop check**: For recommendations about analyzing running experiments, split into preliminary + final analysis tasks per [decisions/0023-incremental-analysis-throttling.md](../../../decisions/0023-incremental-analysis-throttling.md).
 
-**Fleet routing (ADR 0045)**: When creating new tasks (from recommendations, implied tasks, or any other source), untagged tasks default to fleet-eligible. Only apply `[requires-frontier]` when a task fails the fleet-eligibility checklist from AGENTS.md. When a recommended action can be decomposed into subtasks, prefer creating multiple fleet-eligible subtasks over a single complex task.
+**Fleet routing (ADR 0045)**: When creating new tasks (from recommendations, implied tasks, or any other source), untagged tasks default to fleet-eligible. Only apply `[requires-frontier]` when a task fails the fleet-eligibility checklist from AGENTS.md. Prefer one mid-sized coherent task when the action has a single outcome. Split only when the parts are independently useful/verifiable, need separate approval or resource gates, or are unlikely to fit in one session.
 
 #### Part B: Implied tasks from experiment findings
 

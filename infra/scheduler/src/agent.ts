@@ -73,6 +73,7 @@ export interface SpawnAgentOpts {
 
 export interface AgentResult {
   text: string;
+  ok: boolean;
   costUsd: number;
   numTurns: number;
   durationMs: number;
@@ -275,6 +276,7 @@ export function spawnAgent(opts: SpawnAgentOpts): {
       stallGuard.dispose();
       return {
         text: r.text,
+        ok: r.ok,
         costUsd: resolvedCost,
         numTurns: resolvedTurns,
         durationMs: r.durationMs,

@@ -7,7 +7,7 @@ description: Generate highly compressed Markdown summaries for a-exp projects fo
 
 ## Overview
 
-Create one Obsidian-kanban-friendly Markdown summary per project under `projects/`. Each summary should compress task progress, logged execution cost, experiment results, and report conclusions into checklist cards.
+Create one Obsidian-kanban-friendly Markdown summary per project under `projects/`. Each summary should compress task progress, logged execution cost, experiment results, report conclusions, and packet summaries into checklist cards.
 
 ## Workflow
 
@@ -18,13 +18,14 @@ Create one Obsidian-kanban-friendly Markdown summary per project under `projects
    - `projects/<project>/experiments/*/EXPERIMENT.md` for key results and findings.
    - `projects/<project>/reports/**/*.md` for project-local reports, if present.
    - `reports/**/*.md` only when project-local reports are absent or the report clearly references the project.
+   - `reports/packet/**/*.md` and promo packet directories such as `reports/promo-packets/**/*.md` when the packet filename or content clearly references the project.
 3. Generate `reports/kanban/<project>.md` by default, unless the user gives another output directory.
 4. Keep every substantive card as a single top-level checkbox line. Avoid nested bullets because Obsidian kanban plugins often treat top-level checklist items as cards.
 5. After generation, read the output and tighten wording manually if needed. The final file should be evidence-dense, not a prose report.
 
 ## Output Format
 
-Use exactly two sections per project:
+Use the two base sections per project, plus a packet section when matching packets exist:
 
 ```markdown
 ## <project>-Tasks
@@ -34,6 +35,9 @@ Use exactly two sections per project:
 ## <project>-Results
 - [x] **Experiment** <experiment-id>: <br>- <key result>; <br>- <key finding>; <br>- <artifact/result pointer if useful>
 - [x] **Report** <report-id>: <br>- <key finding>; <br>- <conclusion>
+
+## <project>-Packets
+- [x] **Packet** <packet-id>: <br>- <purpose/target summary>; <br>- <verified behavior or test plan>; <br>- <implementation risk if useful>
 ```
 
 Use `[x]` for generated summary cards. Use `[ ]` only when the card represents a missing source, unresolved question, or incomplete project item that should remain visibly open in Obsidian.
@@ -42,9 +46,10 @@ Use `[x]` for generated summary cards. Use `[ ]` only when the card represents a
 
 - Prefer numbers over adjectives: `mean RMSE 0.483517` is better than `performed best`.
 - Preserve identifiers: task titles, experiment IDs, report filenames, artifact paths, dates, and metric names.
-- Summarize each experiment or report in one checklist item. Bold the card type (`**Progress**`, `**Cost**`, `**Experiment**`, `**Report**`) and separate compressed bullet fragments with literal `<br>- ` tags inside the card.
+- Summarize each experiment, report, or packet in one checklist item. Bold the card type (`**Progress**`, `**Cost**`, `**Experiment**`, `**Report**`, `**Packet**`) and separate compressed bullet fragments with literal `<br>- ` tags inside the card.
 - If a source has a `## Findings` section, prefer those bullets over earlier design or protocol sections.
 - If a report has a `## Conclusion` section, include the conclusion unless it duplicates the findings.
+- For packets, prefer `## 1. Purpose`, `## 4. Verified Behavior`, `## 8. Test Plan`, and `## 10. Implementation Risks` over broad implementation detail sections.
 - Do not invent cost attribution. If a log cannot be matched to a task, label it as a session using the log timestamp.
 - Keep paths relative to the repo root.
 
@@ -56,7 +61,7 @@ Use `scripts/generate_kanban.py` for the first pass:
 python .agents/skills/kanban/scripts/generate_kanban.py --repo-root . --output-dir reports/kanban
 ```
 
-The script counts tasks, parses `.a-exp/logs`, extracts finding bullets from experiments and reports, and writes one `<project>.md` file per project. It is intentionally conservative; after running it, inspect the generated Markdown and compress or correct any card whose attribution is ambiguous.
+The script counts tasks, parses `.a-exp/logs`, extracts finding bullets from experiments and reports, adds matching packet summaries when packet files exist, and writes one `<project>.md` file per project. It is intentionally conservative; after running it, inspect the generated Markdown and compress or correct any card whose attribution is ambiguous.
 
 Useful options:
 

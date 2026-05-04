@@ -10,7 +10,7 @@ Done when: Scheduler, Slack, project memory, reports, budgets, and experiment to
 This support project tracks work on a-exp itself. The repo was trimmed to keep only the components the user identified as necessary:
 
 - cron scheduler
-- project creation with decomposed tasks
+- project creation with bounded task units
 - automatic project extension/exploration through orient-style workflows
 - repo memory
 - experiment records and reports
@@ -21,6 +21,54 @@ This support project tracks work on a-exp itself. The repo was trimmed to keep o
 Historical research projects and heavy governance history are intentionally removed from the core branch.
 
 ## Log
+
+### 2026-05-04 (Added packet summaries to kanban output)
+
+Augmented the kanban skill and generator so matching packet Markdown under `reports/packet/`, `reports/packets/`, or promo packet directories adds an optional `## <project>-Packets` section with one compact packet card per file. Packet directories are now excluded from generic report summaries to avoid duplicate report cards.
+
+Verification:
+- `python -c "import ast, pathlib; ast.parse(pathlib.Path('.agents/skills/kanban/scripts/generate_kanban.py').read_text())"`: passed.
+- `python -c "import argparse, importlib.util, pathlib, sys, tempfile; sys.dont_write_bytecode=True; p=pathlib.Path('.agents/skills/kanban/scripts/generate_kanban.py'); spec=importlib.util.spec_from_file_location('gk', p); m=importlib.util.module_from_spec(spec); sys.modules['gk']=m; spec.loader.exec_module(m); root=pathlib.Path(tempfile.mkdtemp(dir='/private/tmp')); project=root/'projects'/'demo'; packet_dir=root/'reports'/'packet'; project.mkdir(parents=True); packet_dir.mkdir(parents=True); (project/'TASKS.md').write_text('- [x] Build packet support\n', encoding='utf-8'); (packet_dir/'demo-to-target-solver.md').write_text('# Algorithm Implementation Packet: Solver\n\n## 1. Purpose\n\nPort demo solver into target.\n\n## 4. Verified Behavior\n\n- RMSE 0.12 on fixture\n\n## 8. Test Plan\n\n- Add regression test\n', encoding='utf-8'); out=m.generate_project(root, project, argparse.Namespace(max_cost_items=2, max_result_bullets=3)); print(out)"`: printed a `## demo-Packets` section and did not duplicate the packet as a report.
+- `python .agents/skills/kanban/scripts/generate_kanban.py --repo-root . --dry-run --max-cost-items 1 --max-result-bullets 2`: passed; current repo output has no packet section because no matching packets exist.
+
+Files:
+- `.agents/skills/kanban/SKILL.md`
+- `.agents/skills/kanban/scripts/generate_kanban.py`
+- `projects/a-exp/README.md`
+
+### 2026-05-03 (Fixed Codex startup failure classification)
+
+Fixed scheduler Codex failure handling so `type: "error"` and `turn.failed` JSONL events mark the backend result as failed, non-zero Codex process exits reject even when stderr has text, and backend `ok: false` propagates through agent and job execution status. Added regressions for ignored JSON error events, stderr-bearing non-zero exits, and scheduled jobs that receive Codex JSON error events.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 13 tests.
+
+Files:
+- `infra/scheduler/src/backend.ts`
+- `infra/scheduler/src/agent.ts`
+- `infra/scheduler/src/executor.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
+### 2026-05-02 (Switched task policy to mid-sized units)
+
+Updated the core task policy, scaffold guidance, orient task-supply rules, and examples to prefer mid-sized coherent tasks with optional multi-bullet `Done when` criteria. Task granularity now honors user requests for finer or coarser decomposition when each task remains bounded and verifiable. Added a report parser regression test and a kanban parser note so acceptance checklists are not counted as separate tasks.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 10 tests.
+- `python -c "import importlib.util, sys, tempfile, pathlib; p=pathlib.Path('.agents/skills/kanban/scripts/generate_kanban.py'); spec=importlib.util.spec_from_file_location('gk', p); m=importlib.util.module_from_spec(spec); sys.modules['gk']=m; spec.loader.exec_module(m); d=pathlib.Path(tempfile.mkdtemp()); f=d/'TASKS.md'; f.write_text('# Tasks\n\n- [ ] Ship mid-sized task\n  Why: test\n  Done when:\n  - [ ] Build passes\n  - [ ] Report shows one task\n  Priority: high\n', encoding='utf-8'); tasks=m.parse_tasks(f); print(len(tasks), tasks[0].title if tasks else '')"`: printed `1 Ship mid-sized task`.
+- `rg -n 'small tasks|decomposed next actions|decomposed tasks|decomposed task|3-5 bootstrapping|>2 independent|>3 files|mixed mechanical|multiple fleet-eligible|single complex|smallest change|task decomposition' AGENTS.md README.md docs .agents infra/scheduler/src examples projects/a-exp -S`: no matches.
+
+Files:
+- `AGENTS.md`
+- `docs/conventions/task-lifecycle.md`
+- `docs/schemas/task.md`
+- `.agents/skills/`
+- `infra/scheduler/src/workspace.ts`
+- `infra/scheduler/src/core.test.ts`
+- `examples/my-research-project/TASKS.md`
 
 ### 2026-04-30 (Added packet handoff skill)
 
