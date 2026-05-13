@@ -22,6 +22,23 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-13 (Daemonized scheduler start by default)
+
+Changed `a-exp start` to launch the scheduler as a detached background daemon while preserving the previous foreground behavior behind `a-exp start --foreground`. The daemon path spawns the same CLI in foreground mode with `--repo <workspace>`, writes runtime output to `.a-exp/logs/daemon.log`, waits briefly for the scheduler PID lock, and leaves `status` and `stop` on the existing lockfile interaction model. Also fixed `stop` stale-lock cleanup so dead PID lockfiles are actually removed.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 19 tests.
+- `./a-exp start`: passed with elevated permission for the daemon socket bind, reported a daemon PID and `.a-exp/logs/daemon.log`.
+- `./a-exp status`: passed, reported `Daemon: running` after start and `Daemon: stopped` after stop.
+- `./a-exp stop`: passed with elevated permission, sent `SIGTERM` to the daemon PID.
+
+Files:
+- `README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-13 (Added kanban and packet skill CLI wrappers)
 
 Added `a-exp kanban [project]` and `a-exp packet <project> <target-package> [instructions...]` as thin wrappers around the `kanban` and `packet` skills. Both commands share the manual skill-job execution path used by `a-exp project`, support `--model`, `--max-duration-ms`, and `--dry-run`, and expose skill-specific prompt options for kanban output limits and packet handoff arguments.

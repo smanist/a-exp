@@ -114,6 +114,10 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ./a-exp check-health --notify
 ```
 
+`./a-exp start` launches the scheduler as a background daemon and writes daemon
+output to `.a-exp/logs/daemon.log`. Use `./a-exp start --foreground` when
+developing or when you want startup and runtime logs in the current terminal.
+
 Global workspace override:
 
 ```bash

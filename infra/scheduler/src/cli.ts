@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /** CLI for the trimmed a-exp scheduler. */
 
-import { readFileSync, existsSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { join, resolve, dirname, basename } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -86,6 +87,9 @@ Global options:
 
 Init options:
   --project <name>          Default project name to scaffold
+
+Start options:
+  --foreground              Run the scheduler in the current terminal
 
 Project options:
   --mode <mode>             Override file Mode: scaffold, augment, or propose
@@ -429,7 +433,7 @@ async function main(): Promise<void> {
   if (cmd === "project") return cmdProject(args.slice(1), parsed.repo);
   if (cmd === "kanban") return cmdKanban(args.slice(1), parsed.repo);
   if (cmd === "packet") return cmdPacket(args.slice(1), parsed.repo);
-  if (cmd === "start") return cmdStart(parsed.repo);
+  if (cmd === "start") return cmdStart(args.slice(1), parsed.repo);
   if (cmd === "stop") return cmdStop(parsed.repo);
   if (cmd === "add") return cmdAdd(args.slice(1), parsed.repo);
   if (cmd === "list") return cmdList(parsed.repo);
@@ -543,7 +547,66 @@ async function cmdPacket(args: string[], repo?: string): Promise<void> {
   });
 }
 
-async function cmdStart(repo?: string): Promise<void> {
+export function buildStartForegroundArgs(cliPath: string, workspaceRoot: string): string[] {
+  return [cliPath, "--repo", workspaceRoot, "start", "--foreground"];
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForDaemonStart(workspace: Workspace, child: ReturnType<typeof spawn>, timeoutMs = 5_000): Promise<boolean> {
+  let exited = false;
+  child.once("exit", () => { exited = true; });
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (getDaemonState(workspace) === "running") return true;
+    if (exited) return false;
+    await sleep(100);
+  }
+  return getDaemonState(workspace) === "running";
+}
+
+function removeLockfileBestEffort(lockfile: string): void {
+  try { unlinkSync(lockfile); } catch { /* best effort stale lock cleanup */ }
+}
+
+async function cmdStart(args: string[], repo?: string): Promise<void> {
+  const opts = parseOptions(args, new Set(["foreground"]));
+  if (opts.foreground === true) return cmdStartForeground(repo);
+
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const lockfile = getSchedulerLockfilePath(workspace.lockDir);
+  const check = checkForExistingInstance(lockfile);
+  if (!check.canStart) fail(check.message);
+
+  mkdirSync(workspace.logsDir, { recursive: true });
+  const logFile = join(workspace.logsDir, "daemon.log");
+  appendFileSync(logFile, `\n# a-exp daemon start ${new Date().toISOString()}\n`);
+  const out = openSync(logFile, "a");
+  const err = openSync(logFile, "a");
+  const cliPath = process.argv[1] ? resolve(process.argv[1]) : join(__dirname, "cli.js");
+  const child = spawn(process.execPath, buildStartForegroundArgs(cliPath, workspace.root), {
+    cwd: workspace.root,
+    detached: true,
+    stdio: ["ignore", out, err],
+    env: process.env,
+  });
+  child.unref();
+  closeSync(out);
+  closeSync(err);
+
+  const started = await waitForDaemonStart(workspace, child);
+  if (!started) {
+    if (getDaemonState(workspace) === "stopped") removeLockfileBestEffort(lockfile);
+    fail(`Scheduler daemon did not start. See ${logFile}`);
+  }
+  console.log(`Scheduler daemon started with PID ${readFileSync(lockfile, "utf-8").trim()}`);
+  console.log(`Log: ${logFile}`);
+}
+
+async function cmdStartForeground(repo?: string): Promise<void> {
   const workspace = requireWorkspace(repo);
   configureWorkspaceRuntime(workspace);
   const lockfile = getSchedulerLockfilePath(workspace.lockDir);
@@ -570,14 +633,21 @@ async function cmdStart(repo?: string): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  await slack.startSlackBot({ repoDir: workspace.root }).catch((err) => {
-    console.error(`[slack] Failed to start: ${err}`);
-  });
-  const apiPort = await startApiServer({
-    getStatus: () => buildStatus(workspace, "running"),
-  });
-  console.log(`[api] Listening on http://127.0.0.1:${apiPort}`);
-  await service.start();
+  try {
+    await slack.startSlackBot({ repoDir: workspace.root }).catch((err) => {
+      console.error(`[slack] Failed to start: ${err}`);
+    });
+    const apiPort = await startApiServer({
+      getStatus: () => buildStatus(workspace, "running"),
+    });
+    console.log(`[api] Listening on http://127.0.0.1:${apiPort}`);
+    await service.start();
+  } catch (err) {
+    service.stop();
+    await stopApiServer().catch(() => {});
+    releaseLock(lockfile);
+    throw err;
+  }
 }
 
 export async function stopScheduler(repo?: string): Promise<{ ok: boolean; message: string; pid?: number }> {
@@ -586,7 +656,7 @@ export async function stopScheduler(repo?: string): Promise<{ ok: boolean; messa
   if (!existsSync(lockfile)) return { ok: true, message: "Scheduler is not running" };
   const pid = Number(readFileSync(lockfile, "utf-8").trim());
   if (!Number.isFinite(pid) || !isPidAlive(pid)) {
-    releaseLock(lockfile);
+    removeLockfileBestEffort(lockfile);
     return { ok: true, message: "Removed stale scheduler lockfile" };
   }
   process.kill(pid, "SIGTERM");

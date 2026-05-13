@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExecJsonState, getBackend, parseCodexMessage } from "./backend.js";
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
-import { buildKanbanSkillPrompt, buildPacketSkillPrompt, buildProjectSkillPrompt, parseProjectDescriptionFile } from "./cli.js";
+import { buildKanbanSkillPrompt, buildPacketSkillPrompt, buildProjectSkillPrompt, buildStartForegroundArgs, parseProjectDescriptionFile, stopScheduler } from "./cli.js";
 import { executeJob } from "./executor.js";
 import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
@@ -187,6 +187,16 @@ Done when: Reports stay readable.
     expect(prompt).toContain("reports/packet/");
   });
 
+  it("builds foreground start arguments for daemon handoff", () => {
+    expect(buildStartForegroundArgs("/repo/a-exp/infra/scheduler/dist/cli.js", "/workspace")).toEqual([
+      "/repo/a-exp/infra/scheduler/dist/cli.js",
+      "--repo",
+      "/workspace",
+      "start",
+      "--foreground",
+    ]);
+  });
+
   it("requires non-self-hosting workspaces to be parallel to an a-exp kit", async () => {
     const dir = await mkdtemp(join(tmpdir(), "a-exp-no-kit-"));
     try {
@@ -240,6 +250,23 @@ Done when: Reports stay readable.
 
       await writeFile(lockfile, "999999999\n", "utf-8");
       expect(getDaemonStateFromLockfile(lockfile)).toBe("stopped");
+    } finally {
+      await rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  it("removes stale scheduler lockfiles on stop", async () => {
+    const { parent, repo } = await makeSiblingWorkspace("a-exp-stale-stop-");
+    try {
+      await initWorkspace(repo, "demo");
+      const paths = workspacePaths(repo);
+      const lockfile = join(paths.lockDir, "scheduler.pid");
+      await writeFile(lockfile, "999999999\n", "utf-8");
+
+      const result = await stopScheduler(repo);
+
+      expect(result.message).toBe("Removed stale scheduler lockfile");
+      await expect(readFile(lockfile, "utf-8")).rejects.toMatchObject({ code: "ENOENT" });
     } finally {
       await rm(parent, { recursive: true, force: true });
     }
