@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExecJsonState, getBackend, parseCodexMessage } from "./backend.js";
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
+import { buildProjectSkillPrompt, parseProjectDescriptionFile } from "./cli.js";
 import { executeJob } from "./executor.js";
 import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
@@ -117,6 +118,44 @@ Done when: Reports stay readable.
 
     expect(parsed.tasks).toHaveLength(1);
     expect(parsed.tasks[0].text).toBe("Ship a mid-sized task");
+  });
+
+  it("parses project description files with scaffold as the default mode", () => {
+    const description = parseProjectDescriptionFile(
+      [
+        "Title: Calibration Study",
+        "Mode: scaffold (default; or augment, etc.)",
+        "",
+        "Investigate whether calibration reduces rollout error.",
+        "Done when a report compares two methods.",
+      ].join("\n"),
+    );
+
+    expect(description).toEqual({
+      title: "Calibration Study",
+      mode: "scaffold",
+      project: undefined,
+      content: "Investigate whether calibration reduces rollout error.\nDone when a report compares two methods.",
+    });
+  });
+
+  it("builds a project skill prompt from a description file", () => {
+    const prompt = buildProjectSkillPrompt(
+      {
+        title: "Add Dataset Baselines",
+        mode: "augment",
+        project: "sysid",
+        content: "Add benchmark tasks for the new datasets.",
+      },
+      "/tmp/project-description.md",
+    );
+
+    expect(prompt).toContain("Use the project skill in augment mode");
+    expect(prompt).toContain("description file at /tmp/project-description.md");
+    expect(prompt).toContain("Treat the description file as human-provided project input");
+    expect(prompt).toContain("Title: Add Dataset Baselines");
+    expect(prompt).toContain("Project: sysid");
+    expect(prompt).toContain("Add benchmark tasks for the new datasets.");
   });
 
   it("requires non-self-hosting workspaces to be parallel to an a-exp kit", async () => {

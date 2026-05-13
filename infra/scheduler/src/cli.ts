@@ -2,8 +2,8 @@
 /** CLI for the trimmed a-exp scheduler. */
 
 import { readFileSync, existsSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve, dirname, basename } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const toolRoot = resolve(__dirname, "../../..");
@@ -66,6 +66,7 @@ a-exp — Cron scheduler for a-exp Core
 
 Commands:
   init --project <name>     Initialize an a-exp project workspace in this repo
+  project <file>            Run the project skill from a description file
   start                     Run the scheduler daemon
   stop                      Stop the running scheduler daemon
   add <options>             Add a scheduled job
@@ -83,6 +84,12 @@ Global options:
 
 Init options:
   --project <name>          Default project name to scaffold
+
+Project options:
+  --mode <mode>             Override file Mode: scaffold, augment, or propose
+  --model <model>           Model name
+  --max-duration-ms <ms>    Override max session duration
+  --dry-run                 Print the project-skill prompt without running it
 
 Add options:
   --name <name>             Job name
@@ -117,7 +124,7 @@ function requireArg(val: string | undefined, label: string): string {
   return val;
 }
 
-function parseOptions(args: string[]): Record<string, string | true> {
+function parseOptions(args: string[], booleanOptions = new Set<string>()): Record<string, string | true> {
   const opts: Record<string, string | true> = {};
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -128,6 +135,10 @@ function parseOptions(args: string[]): Record<string, string | true> {
       continue;
     }
     const key = arg.slice(2);
+    if (booleanOptions.has(key)) {
+      opts[key] = true;
+      continue;
+    }
     const next = args[i + 1];
     if (next && !next.startsWith("--")) {
       opts[key] = next;
@@ -137,6 +148,23 @@ function parseOptions(args: string[]): Record<string, string | true> {
     }
   }
   return opts;
+}
+
+function positionalArgs(args: string[], booleanOptions = new Set<string>()): string[] {
+  const positional: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (!arg.startsWith("--")) {
+      positional.push(arg);
+      continue;
+    }
+    if (arg.includes("=")) continue;
+    const key = arg.slice(2);
+    if (booleanOptions.has(key)) continue;
+    const next = args[i + 1];
+    if (next && !next.startsWith("--")) i++;
+  }
+  return positional;
 }
 
 function extractGlobalOptions(args: string[]): { repo?: string; args: string[] } {
@@ -200,6 +228,72 @@ function projectWorkCyclePrompt(project: string): string {
   ].join("\n");
 }
 
+export interface ProjectDescription {
+  title?: string;
+  mode: "scaffold" | "augment" | "propose";
+  project?: string;
+  content: string;
+}
+
+const PROJECT_MODES = new Set(["scaffold", "augment", "propose"]);
+
+function normalizeProjectMode(mode: string | undefined): ProjectDescription["mode"] {
+  const raw = (mode ?? "scaffold").trim().toLowerCase();
+  const normalized = raw.split(/[\s(]/, 1)[0] || "scaffold";
+  if (!PROJECT_MODES.has(normalized)) {
+    fail(`Error: invalid project mode "${mode}". Expected scaffold, augment, or propose.`);
+  }
+  return normalized as ProjectDescription["mode"];
+}
+
+export function parseProjectDescriptionFile(content: string, opts: { modeOverride?: string } = {}): ProjectDescription {
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  const headers: Record<string, string> = {};
+  let contentStart = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) {
+      contentStart = i + 1;
+      break;
+    }
+    const match = line.match(/^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$/);
+    if (!match) {
+      contentStart = i;
+      break;
+    }
+    headers[match[1].toLowerCase()] = match[2].trim();
+    contentStart = i + 1;
+  }
+
+  const mode = normalizeProjectMode(opts.modeOverride ?? headers.mode);
+  return {
+    title: headers.title || undefined,
+    mode,
+    project: headers.project || undefined,
+    content: lines.slice(contentStart).join("\n").trim(),
+  };
+}
+
+export function buildProjectSkillPrompt(description: ProjectDescription, sourcePath: string): string {
+  const target = description.project ? `Project: ${description.project}` : "Project: not specified";
+  const title = description.title ? `Title: ${description.title}` : `Title: ${basename(sourcePath)}`;
+  return [
+    `Use the project skill in ${description.mode} mode using the description file at ${sourcePath}.`,
+    "",
+    "Treat the description file as human-provided project input and as answers to the project-skill interview where it is specific enough.",
+    "If required information is missing, ask concise follow-up questions and do not edit files yet.",
+    "If the request is sufficiently specified, follow the project skill workflow: check for overlap, make the minimal project-memory changes, present the delta when required by the skill, verify, update logs, and commit the completed logical unit.",
+    "",
+    title,
+    `Mode: ${description.mode}`,
+    target,
+    "",
+    "Description:",
+    description.content || "(No body content provided.)",
+  ].join("\n");
+}
+
 function formatSchedule(schedule: Schedule): string {
   if (schedule.kind === "cron") return schedule.tz ? `${schedule.expr} (${schedule.tz})` : schedule.expr;
   return `every ${schedule.everyMs}ms`;
@@ -244,6 +338,7 @@ async function main(): Promise<void> {
   }
 
   if (cmd === "init") return cmdInit(args.slice(1), parsed.repo);
+  if (cmd === "project") return cmdProject(args.slice(1), parsed.repo);
   if (cmd === "start") return cmdStart(parsed.repo);
   if (cmd === "stop") return cmdStop(parsed.repo);
   if (cmd === "add") return cmdAdd(args.slice(1), parsed.repo);
@@ -270,6 +365,51 @@ async function cmdInit(args: string[], repo?: string): Promise<void> {
     return;
   }
   for (const path of created) console.log(`  created ${path}`);
+}
+
+async function cmdProject(args: string[], repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const opts = parseOptions(args, new Set(["dry-run"]));
+  const fileArg = positionalArgs(args, new Set(["dry-run"]))[0];
+  if (!fileArg) fail("Error: description file required.");
+
+  const sourcePath = resolve(fileArg);
+  if (!existsSync(sourcePath)) fail(`Error: description file not found: ${sourcePath}`);
+
+  const description = parseProjectDescriptionFile(readFileSync(sourcePath, "utf-8"), {
+    modeOverride: typeof opts.mode === "string" ? opts.mode : undefined,
+  });
+  if (description.mode === "augment" && !description.project) {
+    fail("Error: augment mode requires a Project: header in the description file.");
+  }
+
+  const message = buildProjectSkillPrompt(description, sourcePath);
+  if (opts["dry-run"] === true) {
+    console.log(message);
+    return;
+  }
+
+  const job: Job = {
+    id: `project-${Date.now().toString(36)}`,
+    name: `project-${description.mode}`,
+    schedule: { kind: "every", everyMs: 0 },
+    payload: {
+      message,
+      cwd: workspace.root,
+      ...(typeof opts.model === "string" ? { model: opts.model } : {}),
+      ...(typeof opts["max-duration-ms"] === "string" ? { maxDurationMs: Number(opts["max-duration-ms"]) } : {}),
+    },
+    enabled: true,
+    createdAtMs: Date.now(),
+    state: { nextRunAtMs: null, lastRunAtMs: null, lastStatus: null, lastError: null, lastDurationMs: null, runCount: 0 },
+  };
+
+  const result = await executeJob(job, "manual", { logsDir: workspace.logsDir });
+  console.log(result.ok ? "ok" : "error");
+  if (result.logFile) console.log(`Log: ${result.logFile}`);
+  if (result.error) console.error(result.error);
+  if (!result.ok) process.exitCode = 1;
 }
 
 async function cmdStart(repo?: string): Promise<void> {
@@ -474,7 +614,9 @@ async function cmdCheckHealth(args: string[], repo?: string): Promise<void> {
   process.exitCode = 1;
 }
 
-main().catch((err) => {
-  console.error(err instanceof Error ? err.stack ?? err.message : String(err));
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error(err instanceof Error ? err.stack ?? err.message : String(err));
+    process.exit(1);
+  });
+}

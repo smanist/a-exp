@@ -22,6 +22,20 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-13 (Added project skill CLI wrapper)
+
+Added `a-exp project <description-file>` as a thin wrapper around the `project` skill. The command parses `Title:`, `Mode:`, and `Project:` headers, defaults to scaffold mode, supports `--mode`, `--model`, `--max-duration-ms`, and `--dry-run`, and launches a manual project-skill agent job when not in dry-run mode. Added parser and prompt-builder tests.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 15 tests.
+- `./a-exp project projects/a-exp/TASKS.md --dry-run`: passed, printed the generated scaffold-mode project-skill prompt.
+
+Files:
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-04 (Added packet summaries to kanban output)
 
 Augmented the kanban skill and generator so matching packet Markdown under `reports/packet/`, `reports/packets/`, or promo packet directories adds an optional `## <project>-Packets` section with one compact packet card per file. Packet directories are now excluded from generic report summaries to avoid duplicate report cards.
