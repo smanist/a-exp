@@ -103,7 +103,7 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ```bash
 ./a-exp start
 ./a-exp stop
-./a-exp project <description-file>
+./a-exp project [description-file]
 ./a-exp kanban [project] --output-dir reports/kanban
 ./a-exp packet <project> <target-package> [instructions...]
 ./a-exp add --name work-cycle --cron "0 * * * *" --message-default
@@ -117,6 +117,10 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 `./a-exp start` launches the scheduler as a background daemon and writes daemon
 output to `.a-exp/logs/daemon.log`. Use `./a-exp start --foreground` when
 developing or when you want startup and runtime logs in the current terminal.
+
+`./a-exp project` opens a temporary project description file in VS Code and runs
+the project skill after the editor closes. Pass `./a-exp project <file>` to use
+an existing description file.
 
 Global workspace override:
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /** CLI for the trimmed a-exp scheduler. */
 
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync } from "node:fs";
+import { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, resolve, dirname, basename } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -67,7 +68,7 @@ a-exp — Cron scheduler for a-exp Core
 
 Commands:
   init --project <name>     Initialize an a-exp project workspace in this repo
-  project <file>            Run the project skill from a description file
+  project [file]            Run the project skill from a description file, or open a VS Code temp file
   kanban [project]          Run the kanban skill for project summaries
   packet <project> <target> Run the packet skill for an implementation handoff
   start                     Run the scheduler daemon
@@ -92,6 +93,7 @@ Start options:
   --foreground              Run the scheduler in the current terminal
 
 Project options:
+  --editor <cmd>            Editor command for interactive project input (default: code)
   --mode <mode>             Override file Mode: scaffold, augment, or propose
   --model <model>           Model name
   --max-duration-ms <ms>    Override max session duration
@@ -255,6 +257,14 @@ export interface ProjectDescription {
 }
 
 const PROJECT_MODES = new Set(["scaffold", "augment", "propose"]);
+export const PROJECT_DESCRIPTION_TEMPLATE = [
+  "Title: ",
+  "Mode: scaffold",
+  "Project: ",
+  "",
+  "Describe the project or scope change here. Include useful context, done-when criteria, and task granularity preferences.",
+  "",
+].join("\n");
 
 function normalizeProjectMode(mode: string | undefined): ProjectDescription["mode"] {
   const raw = (mode ?? "scaffold").trim().toLowerCase();
@@ -311,6 +321,38 @@ export function buildProjectSkillPrompt(description: ProjectDescription, sourceP
     "Description:",
     description.content || "(No body content provided.)",
   ].join("\n");
+}
+
+export function createProjectDescriptionTempFile(): string {
+  const dir = mkdtempSync(join(tmpdir(), "a-exp-project-"));
+  const path = join(dir, "project.md");
+  writeFileSync(path, PROJECT_DESCRIPTION_TEMPLATE, "utf-8");
+  return path;
+}
+
+async function openProjectDescriptionInEditor(path: string, editor = "code"): Promise<void> {
+  console.log(`Opening project description in ${editor}: ${path}`);
+  const child = spawn(editor, ["--reuse-window", "--wait", path], {
+    stdio: "inherit",
+    env: process.env,
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    child.once("error", (err) => {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        reject(new Error(`Editor command not found: ${editor}. Install the VS Code shell command or pass --editor <cmd>.`));
+        return;
+      }
+      reject(err);
+    });
+    child.once("exit", (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(signal ? `${editor} exited from signal ${signal}` : `${editor} exited with code ${code}`));
+    });
+  });
 }
 
 export interface KanbanOptions {
@@ -466,10 +508,21 @@ async function cmdProject(args: string[], repo?: string): Promise<void> {
   configureWorkspaceRuntime(workspace);
   const opts = parseOptions(args, new Set(["dry-run"]));
   const fileArg = positionalArgs(args, new Set(["dry-run"]))[0];
-  if (!fileArg) fail("Error: description file required.");
 
-  const sourcePath = resolve(fileArg);
+  const sourcePath = fileArg ? resolve(fileArg) : createProjectDescriptionTempFile();
   if (!existsSync(sourcePath)) fail(`Error: description file not found: ${sourcePath}`);
+  if (!fileArg) {
+    await openProjectDescriptionInEditor(sourcePath, typeof opts.editor === "string" ? opts.editor : undefined);
+    const edited = readFileSync(sourcePath, "utf-8");
+    if (edited === PROJECT_DESCRIPTION_TEMPLATE) {
+      console.log("No project description changes made; not running a-exp project.");
+      return;
+    }
+    if (!edited.trim()) {
+      console.log("Project description is empty; not running a-exp project.");
+      return;
+    }
+  }
 
   const description = parseProjectDescriptionFile(readFileSync(sourcePath, "utf-8"), {
     modeOverride: typeof opts.mode === "string" ? opts.mode : undefined,

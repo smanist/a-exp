@@ -5,7 +5,16 @@ import { describe, expect, it } from "vitest";
 
 import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExecJsonState, getBackend, parseCodexMessage } from "./backend.js";
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
-import { buildKanbanSkillPrompt, buildPacketSkillPrompt, buildProjectSkillPrompt, buildStartForegroundArgs, parseProjectDescriptionFile, stopScheduler } from "./cli.js";
+import {
+  PROJECT_DESCRIPTION_TEMPLATE,
+  buildKanbanSkillPrompt,
+  buildPacketSkillPrompt,
+  buildProjectSkillPrompt,
+  buildStartForegroundArgs,
+  createProjectDescriptionTempFile,
+  parseProjectDescriptionFile,
+  stopScheduler,
+} from "./cli.js";
 import { executeJob } from "./executor.js";
 import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
@@ -156,6 +165,19 @@ Done when: Reports stay readable.
     expect(prompt).toContain("Title: Add Dataset Baselines");
     expect(prompt).toContain("Project: sysid");
     expect(prompt).toContain("Add benchmark tasks for the new datasets.");
+  });
+
+  it("creates a VS Code-editable project description temp file", async () => {
+    const path = createProjectDescriptionTempFile();
+    const content = await readFile(path, "utf-8");
+
+    expect(content).toBe(PROJECT_DESCRIPTION_TEMPLATE);
+    expect(parseProjectDescriptionFile(content)).toEqual({
+      title: undefined,
+      mode: "scaffold",
+      project: undefined,
+      content: "Describe the project or scope change here. Include useful context, done-when criteria, and task granularity preferences.",
+    });
   });
 
   it("builds a kanban skill prompt from CLI options", () => {

@@ -22,6 +22,26 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-13 (Made project input interactive by default)
+
+Changed `a-exp project` so the description file argument is optional. When no
+file is provided, the CLI writes a temporary Markdown template, opens it with
+VS Code using `code --reuse-window --wait`, and runs the project skill after the
+editor closes. The previous `a-exp project <description-file>` flow remains
+supported for scripted use, and `--editor <cmd>` can override the editor command.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 20 tests.
+- `./a-exp project projects/a-exp/TASKS.md --dry-run`: passed, printed the generated project-skill prompt.
+- `./a-exp project --editor true --dry-run`: passed, created a temp project description file and exited without running because it was unchanged.
+
+Files:
+- `README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-13 (Daemonized scheduler start by default)
 
 Changed `a-exp start` to launch the scheduler as a detached background daemon while preserving the previous foreground behavior behind `a-exp start --foreground`. The daemon path spawns the same CLI in foreground mode with `--repo <workspace>`, writes runtime output to `.a-exp/logs/daemon.log`, waits briefly for the scheduler PID lock, and leaves `status` and `stop` on the existing lockfile interaction model. Also fixed `stop` stale-lock cleanup so dead PID lockfiles are actually removed.
