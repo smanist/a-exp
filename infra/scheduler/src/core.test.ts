@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExecJsonState, getBackend, parseCodexMessage } from "./backend.js";
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
-import { buildProjectSkillPrompt, parseProjectDescriptionFile } from "./cli.js";
+import { buildKanbanSkillPrompt, buildPacketSkillPrompt, buildProjectSkillPrompt, parseProjectDescriptionFile } from "./cli.js";
 import { executeJob } from "./executor.js";
 import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
@@ -156,6 +156,35 @@ Done when: Reports stay readable.
     expect(prompt).toContain("Title: Add Dataset Baselines");
     expect(prompt).toContain("Project: sysid");
     expect(prompt).toContain("Add benchmark tasks for the new datasets.");
+  });
+
+  it("builds a kanban skill prompt from CLI options", () => {
+    const prompt = buildKanbanSkillPrompt({
+      project: "a-exp",
+      outputDir: "reports/kanban",
+      maxCostItems: "2",
+      maxResultBullets: "3",
+    });
+
+    expect(prompt).toContain("Use the kanban skill");
+    expect(prompt).toContain("Project: a-exp");
+    expect(prompt).toContain("Output directory: reports/kanban");
+    expect(prompt).toContain("Max cost items: 2");
+    expect(prompt).toContain("Max result bullets: 3");
+  });
+
+  it("builds a packet skill prompt from CLI arguments", () => {
+    const prompt = buildPacketSkillPrompt({
+      project: "solver",
+      targetPackage: "/tmp/target-package",
+      instructions: "Prefer the existing linear algebra API.",
+    });
+
+    expect(prompt).toContain("Use the packet skill");
+    expect(prompt).toContain("Project: solver");
+    expect(prompt).toContain("Target package: /tmp/target-package");
+    expect(prompt).toContain("Prefer the existing linear algebra API.");
+    expect(prompt).toContain("reports/packet/");
   });
 
   it("requires non-self-hosting workspaces to be parallel to an a-exp kit", async () => {

@@ -99,6 +99,7 @@ Retained commands:
 
 - `start`, `stop`
 - `add`, `list`, `remove`, `run`, `enable`, `disable`
+- `project`, `kanban`, `packet`
 - `status`, `heartbeat`, `check-health`
 
 Slack configuration:

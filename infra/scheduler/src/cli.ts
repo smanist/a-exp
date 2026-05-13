@@ -67,6 +67,8 @@ a-exp — Cron scheduler for a-exp Core
 Commands:
   init --project <name>     Initialize an a-exp project workspace in this repo
   project <file>            Run the project skill from a description file
+  kanban [project]          Run the kanban skill for project summaries
+  packet <project> <target> Run the packet skill for an implementation handoff
   start                     Run the scheduler daemon
   stop                      Stop the running scheduler daemon
   add <options>             Add a scheduled job
@@ -90,6 +92,19 @@ Project options:
   --model <model>           Model name
   --max-duration-ms <ms>    Override max session duration
   --dry-run                 Print the project-skill prompt without running it
+
+Kanban options:
+  --output-dir <dir>        Output directory for generated summaries
+  --max-cost-items <n>      Limit cost/session items per summary
+  --max-result-bullets <n>  Limit result bullets per card
+  --model <model>           Model name
+  --max-duration-ms <ms>    Override max session duration
+  --dry-run                 Print the kanban-skill prompt without running it
+
+Packet options:
+  --model <model>           Model name
+  --max-duration-ms <ms>    Override max session duration
+  --dry-run                 Print the packet-skill prompt without running it
 
 Add options:
   --name <name>             Job name
@@ -294,6 +309,79 @@ export function buildProjectSkillPrompt(description: ProjectDescription, sourceP
   ].join("\n");
 }
 
+export interface KanbanOptions {
+  project?: string;
+  outputDir?: string;
+  maxCostItems?: string;
+  maxResultBullets?: string;
+}
+
+export function buildKanbanSkillPrompt(opts: KanbanOptions): string {
+  const scope = opts.project ? `Project: ${opts.project}` : "Project: all projects";
+  const output = opts.outputDir ? `Output directory: ${opts.outputDir}` : "Output directory: reports/kanban";
+  const maxCost = opts.maxCostItems ? `Max cost items: ${opts.maxCostItems}` : "Max cost items: skill default";
+  const maxResult = opts.maxResultBullets ? `Max result bullets: ${opts.maxResultBullets}` : "Max result bullets: skill default";
+  return [
+    "Use the kanban skill to generate compressed Obsidian-kanban-friendly project summaries.",
+    "",
+    scope,
+    output,
+    maxCost,
+    maxResult,
+    "",
+    "Follow the kanban skill workflow: read project TASKS, logs, experiment records, reports, and matching packet files; generate the requested Markdown summaries; inspect the output; tighten wording if needed; verify; update the relevant project log; and commit the completed logical unit.",
+    "Keep paths relative to the repo root and do not invent cost attribution.",
+  ].join("\n");
+}
+
+export interface PacketOptions {
+  project: string;
+  targetPackage: string;
+  instructions?: string;
+}
+
+export function buildPacketSkillPrompt(opts: PacketOptions): string {
+  return [
+    "Use the packet skill to create an implementation-ready algorithm handoff packet.",
+    "",
+    `Project: ${opts.project}`,
+    `Target package: ${opts.targetPackage}`,
+    `Additional instructions: ${opts.instructions?.trim() || "none"}`,
+    "",
+    "Follow the packet skill workflow: read target package instructions and relevant APIs first; read the a-exp project context, experiments, reports, and prototype module; identify the verified prototype contract; map it to the target package conventions; write the packet under reports/packet/ unless instructed otherwise; verify the packet quality; update the relevant project log; and commit the completed logical unit.",
+    "Ask one concise question instead of editing if a required argument or target direction is ambiguous.",
+  ].join("\n");
+}
+
+async function runManualSkillJob(opts: {
+  workspace: Workspace;
+  name: string;
+  message: string;
+  model?: string;
+  maxDurationMs?: string;
+}): Promise<void> {
+  const job: Job = {
+    id: `${opts.name}-${Date.now().toString(36)}`,
+    name: opts.name,
+    schedule: { kind: "every", everyMs: 0 },
+    payload: {
+      message: opts.message,
+      cwd: opts.workspace.root,
+      ...(opts.model ? { model: opts.model } : {}),
+      ...(opts.maxDurationMs ? { maxDurationMs: Number(opts.maxDurationMs) } : {}),
+    },
+    enabled: true,
+    createdAtMs: Date.now(),
+    state: { nextRunAtMs: null, lastRunAtMs: null, lastStatus: null, lastError: null, lastDurationMs: null, runCount: 0 },
+  };
+
+  const result = await executeJob(job, "manual", { logsDir: opts.workspace.logsDir });
+  console.log(result.ok ? "ok" : "error");
+  if (result.logFile) console.log(`Log: ${result.logFile}`);
+  if (result.error) console.error(result.error);
+  if (!result.ok) process.exitCode = 1;
+}
+
 function formatSchedule(schedule: Schedule): string {
   if (schedule.kind === "cron") return schedule.tz ? `${schedule.expr} (${schedule.tz})` : schedule.expr;
   return `every ${schedule.everyMs}ms`;
@@ -339,6 +427,8 @@ async function main(): Promise<void> {
 
   if (cmd === "init") return cmdInit(args.slice(1), parsed.repo);
   if (cmd === "project") return cmdProject(args.slice(1), parsed.repo);
+  if (cmd === "kanban") return cmdKanban(args.slice(1), parsed.repo);
+  if (cmd === "packet") return cmdPacket(args.slice(1), parsed.repo);
   if (cmd === "start") return cmdStart(parsed.repo);
   if (cmd === "stop") return cmdStop(parsed.repo);
   if (cmd === "add") return cmdAdd(args.slice(1), parsed.repo);
@@ -390,26 +480,67 @@ async function cmdProject(args: string[], repo?: string): Promise<void> {
     return;
   }
 
-  const job: Job = {
-    id: `project-${Date.now().toString(36)}`,
+  await runManualSkillJob({
+    workspace,
     name: `project-${description.mode}`,
-    schedule: { kind: "every", everyMs: 0 },
-    payload: {
-      message,
-      cwd: workspace.root,
-      ...(typeof opts.model === "string" ? { model: opts.model } : {}),
-      ...(typeof opts["max-duration-ms"] === "string" ? { maxDurationMs: Number(opts["max-duration-ms"]) } : {}),
-    },
-    enabled: true,
-    createdAtMs: Date.now(),
-    state: { nextRunAtMs: null, lastRunAtMs: null, lastStatus: null, lastError: null, lastDurationMs: null, runCount: 0 },
-  };
+    message,
+    model: typeof opts.model === "string" ? opts.model : undefined,
+    maxDurationMs: typeof opts["max-duration-ms"] === "string" ? opts["max-duration-ms"] : undefined,
+  });
+}
 
-  const result = await executeJob(job, "manual", { logsDir: workspace.logsDir });
-  console.log(result.ok ? "ok" : "error");
-  if (result.logFile) console.log(`Log: ${result.logFile}`);
-  if (result.error) console.error(result.error);
-  if (!result.ok) process.exitCode = 1;
+async function cmdKanban(args: string[], repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const opts = parseOptions(args, new Set(["dry-run"]));
+  const project = positionalArgs(args, new Set(["dry-run"]))[0];
+  const message = buildKanbanSkillPrompt({
+    project,
+    outputDir: typeof opts["output-dir"] === "string" ? opts["output-dir"] : undefined,
+    maxCostItems: typeof opts["max-cost-items"] === "string" ? opts["max-cost-items"] : undefined,
+    maxResultBullets: typeof opts["max-result-bullets"] === "string" ? opts["max-result-bullets"] : undefined,
+  });
+  if (opts["dry-run"] === true) {
+    console.log(message);
+    return;
+  }
+
+  await runManualSkillJob({
+    workspace,
+    name: "kanban",
+    message,
+    model: typeof opts.model === "string" ? opts.model : undefined,
+    maxDurationMs: typeof opts["max-duration-ms"] === "string" ? opts["max-duration-ms"] : undefined,
+  });
+}
+
+async function cmdPacket(args: string[], repo?: string): Promise<void> {
+  const workspace = requireWorkspace(repo);
+  configureWorkspaceRuntime(workspace);
+  const opts = parseOptions(args, new Set(["dry-run"]));
+  const positionals = positionalArgs(args, new Set(["dry-run"]));
+  const project = positionals[0];
+  const targetPackage = positionals[1];
+  if (!project) fail("Error: project required.");
+  if (!targetPackage) fail("Error: target package path required.");
+
+  const message = buildPacketSkillPrompt({
+    project,
+    targetPackage: resolve(targetPackage),
+    instructions: positionals.slice(2).join(" "),
+  });
+  if (opts["dry-run"] === true) {
+    console.log(message);
+    return;
+  }
+
+  await runManualSkillJob({
+    workspace,
+    name: "packet",
+    message,
+    model: typeof opts.model === "string" ? opts.model : undefined,
+    maxDurationMs: typeof opts["max-duration-ms"] === "string" ? opts["max-duration-ms"] : undefined,
+  });
 }
 
 async function cmdStart(repo?: string): Promise<void> {

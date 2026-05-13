@@ -103,6 +103,9 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ```bash
 ./a-exp start
 ./a-exp stop
+./a-exp project <description-file>
+./a-exp kanban [project] --output-dir reports/kanban
+./a-exp packet <project> <target-package> [instructions...]
 ./a-exp add --name work-cycle --cron "0 * * * *" --message-default
 ./a-exp list
 ./a-exp run <job-id>

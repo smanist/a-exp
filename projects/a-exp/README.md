@@ -22,6 +22,23 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-13 (Added kanban and packet skill CLI wrappers)
+
+Added `a-exp kanban [project]` and `a-exp packet <project> <target-package> [instructions...]` as thin wrappers around the `kanban` and `packet` skills. Both commands share the manual skill-job execution path used by `a-exp project`, support `--model`, `--max-duration-ms`, and `--dry-run`, and expose skill-specific prompt options for kanban output limits and packet handoff arguments.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 17 tests.
+- `./a-exp kanban a-exp --output-dir reports/kanban --max-cost-items 2 --max-result-bullets 3 --dry-run`: passed, printed the generated kanban-skill prompt.
+- `./a-exp packet a-exp /tmp/target-package prefer CLI integration notes --dry-run`: passed, printed the generated packet-skill prompt.
+
+Files:
+- `AGENTS.md`
+- `README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-13 (Added project skill CLI wrapper)
 
 Added `a-exp project <description-file>` as a thin wrapper around the `project` skill. The command parses `Title:`, `Mode:`, and `Project:` headers, defaults to scaffold mode, supports `--mode`, `--model`, `--max-duration-ms`, and `--dry-run`, and launches a manual project-skill agent job when not in dry-run mode. Added parser and prompt-builder tests.
