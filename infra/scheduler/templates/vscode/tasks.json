@@ -9,8 +9,7 @@
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true,
-        "group": "a-exp"
+        "clear": true
       },
       "problemMatcher": []
     },
@@ -25,8 +24,7 @@
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true,
-        "group": "a-exp"
+        "clear": true
       },
       "problemMatcher": []
     },
@@ -42,21 +40,21 @@
         "runOn": "folderOpen"
       }
     },
-    {
-      "label": "Project (a-exp)",
-      "type": "shell",
-      "command": "a-exp project",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true,
-      },
-      "problemMatcher": []
-    },
+    // {
+    //   "label": "Project (a-exp)",
+    //   "type": "shell",
+    //   "command": "a-exp project",
+    //   "options": {
+    //     "cwd": "${workspaceFolder}"
+    //   },
+    //   "presentation": {
+    //     "echo": true,
+    //     "reveal": "always",
+    //     "panel": "dedicated",
+    //     "clear": true,
+    //   },
+    //   "problemMatcher": []
+    // },
     {
       "label": "Daemon (a-exp)",
       "type": "shell",
