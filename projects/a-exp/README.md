@@ -22,6 +22,24 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Merged job list details into status)
+
+Changed the `a-exp status` jobs section to use the compact job-management row
+from `a-exp list`, including job id, name, enabled state, schedule, and raw next
+run timestamp. The status header remains the broad operator summary for daemon,
+sessions, experiments, and job counts.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+
+Files:
+- `README.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/status.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Added project shorthand for scheduler jobs)
 
 Changed `a-exp add <project>` to behave like

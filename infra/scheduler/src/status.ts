@@ -117,14 +117,6 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes % 60}m`;
 }
 
-function formatRelative(ms: number): string {
-  const totalMinutes = Math.floor(ms / 60_000);
-  if (totalMinutes < 1) return "< 1 min";
-  if (totalMinutes < 60) return `${totalMinutes} min`;
-  const hours = Math.floor(totalMinutes / 60);
-  return `${hours}h ${totalMinutes % 60}m`;
-}
-
 function formatTokenCount(n: number): string {
   return n.toLocaleString("en-US");
 }
@@ -199,13 +191,7 @@ export function formatUnifiedStatus(status: UnifiedStatus): string {
     lines.push("--- Jobs ---");
     for (const j of status.jobs) {
       const state = j.enabled ? "enabled" : "disabled";
-      let nextStr = "none";
-      if (j.nextRunAtMs) {
-        const delta = j.nextRunAtMs - Date.now();
-        nextStr = delta > 0 ? `in ${formatRelative(delta)}` : "overdue";
-      }
-      const lastStr = j.lastStatus ?? "never";
-      lines.push(`  ${j.name} [${state}]  schedule: ${j.schedule}  next: ${nextStr}  last: ${lastStr} (${j.runCount} runs)`);
+      lines.push(`  ${j.id}\t${j.name}\t${state}\t${j.schedule}\tnext=${j.nextRunAtMs ?? "none"}`);
     }
   }
 

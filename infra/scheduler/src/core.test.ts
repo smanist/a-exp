@@ -24,6 +24,7 @@ import { getDaemonStateFromLockfile } from "./instance-guard.js";
 import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferencePath } from "./model-preference.js";
 import { parseProjectReadme } from "./report/data-projects.js";
 import { computeNextRunAtMs } from "./schedule.js";
+import { formatUnifiedStatus } from "./status.js";
 import { JobStore } from "./store.js";
 import { findWorkspaceRoot, initWorkspace, parseWorkspaceConfig, resolveWorkspace, workspacePaths } from "./workspace.js";
 
@@ -198,6 +199,38 @@ describe("a-exp core scheduler", () => {
     expect(output).toContain("Max duration: 1800000ms");
     expect(output).toContain("Enabled: yes");
     expect(output).toContain("Next run: 1970-01-01T00:30:00.000Z");
+  });
+
+  it("formats status jobs as the full job list with ids", () => {
+    const output = formatUnifiedStatus({
+      timestamp: "1970-01-01T00:00:00.000Z",
+      summary: {
+        activeSessions: 0,
+        runningExperiments: 0,
+        totalJobs: 1,
+        enabledJobs: 1,
+        daemonState: "stopped",
+      },
+      sessions: [],
+      experiments: [],
+      jobs: [{
+        id: "job_123",
+        name: "demo",
+        enabled: true,
+        schedule: "0 * * * *",
+        nextRunAtMs: 1_800_000,
+        lastStatus: "ok",
+        lastRunAtMs: 1_000,
+        runCount: 2,
+      }],
+    });
+
+    expect(output).toContain("Daemon: stopped");
+    expect(output).toContain("Active Sessions: 0  |  Running Experiments: 0  |  Jobs: 1/1 enabled");
+    expect(output).toContain("--- Jobs ---");
+    expect(output).toContain("job_123\tdemo\tenabled\t0 * * * *\tnext=1800000");
+    expect(output).not.toContain("last:");
+    expect(output).not.toContain("runs");
   });
 
   it("parses report tasks without treating multi-bullet Done when criteria as tasks", () => {

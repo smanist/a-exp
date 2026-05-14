@@ -46,6 +46,10 @@ to create an hourly job named `my-research-project` with the project-scoped
 work-cycle prompt for `projects/my-research-project`. Explicit add flags
 override the shorthand and config values.
 
+`./a-exp status` is the main operator view. Its jobs section includes the same
+job-management fields as `./a-exp list`: id, name, enabled state, schedule, and
+next run timestamp.
+
 ## Build
 
 ```bash
