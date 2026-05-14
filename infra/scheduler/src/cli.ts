@@ -4,7 +4,6 @@
 import { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, resolve, dirname, basename } from "node:path";
-import { tmpdir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -396,8 +395,10 @@ export function buildProjectSkillPrompt(description: ProjectDescription, sourceP
   ].join("\n");
 }
 
-export function createProjectDescriptionTempFile(): string {
-  const dir = mkdtempSync(join(tmpdir(), "a-exp-project-"));
+export function createProjectDescriptionTempFile(stateDir: string): string {
+  const parent = join(stateDir, "tmp", "project");
+  mkdirSync(parent, { recursive: true });
+  const dir = mkdtempSync(join(parent, "a-exp-project-"));
   const path = join(dir, "project.md");
   writeFileSync(path, PROJECT_DESCRIPTION_TEMPLATE, "utf-8");
   return path;
@@ -620,7 +621,7 @@ async function cmdProject(args: string[], repo?: string): Promise<void> {
   const opts = parseOptions(args, new Set(["dry-run"]));
   const fileArg = positionalArgs(args, new Set(["dry-run"]))[0];
 
-  const sourcePath = fileArg ? resolve(fileArg) : createProjectDescriptionTempFile();
+  const sourcePath = fileArg ? resolve(fileArg) : createProjectDescriptionTempFile(workspace.stateDir);
   if (!existsSync(sourcePath)) fail(`Error: description file not found: ${sourcePath}`);
   if (!fileArg) {
     await openProjectDescriptionInEditor(sourcePath, typeof opts.editor === "string" ? opts.editor : undefined);

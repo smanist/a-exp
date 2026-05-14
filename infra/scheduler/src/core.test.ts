@@ -310,9 +310,11 @@ Done when: Reports stay readable.
   });
 
   it("creates a VS Code-editable project description temp file", async () => {
-    const path = createProjectDescriptionTempFile();
+    const stateDir = await mkdtemp(join(tmpdir(), "a-exp-state-"));
+    const path = createProjectDescriptionTempFile(stateDir);
     const content = await readFile(path, "utf-8");
 
+    expect(path.startsWith(join(stateDir, "tmp", "project", "a-exp-project-"))).toBe(true);
     expect(content).toBe(PROJECT_DESCRIPTION_TEMPLATE);
     expect(parseProjectDescriptionFile(content)).toEqual({
       title: undefined,

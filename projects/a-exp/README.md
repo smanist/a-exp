@@ -22,6 +22,25 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Moved project temp input into workspace state)
+
+Changed `a-exp project` so the VS Code-editable description file is created
+under `.a-exp/tmp/project/` instead of the system temp directory. The file still
+uses a unique `a-exp-project-*` directory, but now stays inside the workspace
+runtime state tree where editor and sandbox permissions are expected to be
+friendlier.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+- `./a-exp project --editor true --dry-run`: passed, created the unchanged template at `.a-exp/tmp/project/a-exp-project-VuszFi/project.md` and exited without running.
+
+Files:
+- `README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Made init workspace-only)
 
 Changed `a-exp init` to initialize only the workspace shell. It no longer

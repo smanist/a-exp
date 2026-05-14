@@ -139,9 +139,9 @@ job-management fields needed by `run`, `enable`, `disable`, and `remove`: id,
 name, enabled state, schedule, human-readable next run, last status, and run
 count.
 
-`./a-exp project` opens a temporary project description file in VS Code and runs
-the project skill after the editor closes. Pass `./a-exp project <file>` to use
-an existing description file.
+`./a-exp project` opens a temporary project description file under
+`.a-exp/tmp/project/` in VS Code and runs the project skill after the editor
+closes. Pass `./a-exp project <file>` to use an existing description file.
 
 `./a-exp kanban --quick` runs the deterministic kanban generator directly,
 without launching an agent session, and writes one combined
