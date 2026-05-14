@@ -133,7 +133,8 @@ that runs against `projects/my-research-project`.
 
 `./a-exp status` is the main operator view. Its jobs section includes the
 job-management fields needed by `run`, `enable`, `disable`, and `remove`: id,
-name, enabled state, schedule, next run timestamp, last status, and run count.
+name, enabled state, schedule, human-readable next run, last status, and run
+count.
 
 `./a-exp project` opens a temporary project description file in VS Code and runs
 the project skill after the editor closes. Pass `./a-exp project <file>` to use

@@ -48,7 +48,8 @@ override the shorthand and config values.
 
 `./a-exp status` is the main operator view. Its jobs section includes the
 job-management fields needed by `run`, `enable`, `disable`, and `remove`: id,
-name, enabled state, schedule, next run timestamp, last status, and run count.
+name, enabled state, schedule, human-readable next run, last status, and run
+count.
 
 ## Build
 

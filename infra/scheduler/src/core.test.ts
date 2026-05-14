@@ -237,8 +237,8 @@ describe("a-exp core scheduler", () => {
     expect(output).toContain("Daemon: stopped");
     expect(output).toContain("Active Sessions: 0  |  Running Experiments: 0  |  Jobs: 1/2 enabled");
     expect(output).toContain("--- Jobs ---");
-    expect(output).toContain("job_123\tdemo\tenabled\t0 * * * *\tnext=1800000\tlast: ok (2 runs)");
-    expect(output).toContain("job_456\tfresh\tdisabled\tevery 60000ms\tnext=none\tlast: never (0 runs)");
+    expect(output).toContain("job_123\tdemo\tenabled\t0 * * * *\tnext: overdue\tlast: ok (2 runs)");
+    expect(output).toContain("job_456\tfresh\tdisabled\tevery 60000ms\tnext: none\tlast: never (0 runs)");
   });
 
   it("parses report tasks without treating multi-bullet Done when criteria as tasks", () => {

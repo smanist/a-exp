@@ -22,6 +22,23 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Made status next run human-readable)
+
+Changed `a-exp status` job rows to render next run as `none`, `overdue`, or a
+relative time such as `in 12 min` instead of raw millisecond timestamps. The row
+still includes job id, name, enabled state, schedule, last status, and run count.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+
+Files:
+- `README.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/status.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Removed scheduler list command)
 
 Removed `a-exp list` from the public scheduler CLI, help text, docs, and

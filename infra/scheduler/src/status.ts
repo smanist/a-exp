@@ -117,6 +117,20 @@ function formatDuration(ms: number): string {
   return `${hours}h ${minutes % 60}m`;
 }
 
+function formatRelative(ms: number): string {
+  const totalMinutes = Math.floor(ms / 60_000);
+  if (totalMinutes < 1) return "< 1 min";
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  return `${hours}h ${totalMinutes % 60}m`;
+}
+
+function formatNextRunAt(ms: number | null): string {
+  if (ms === null) return "none";
+  const delta = ms - Date.now();
+  return delta > 0 ? `in ${formatRelative(delta)}` : "overdue";
+}
+
 function formatTokenCount(n: number): string {
   return n.toLocaleString("en-US");
 }
@@ -192,7 +206,7 @@ export function formatUnifiedStatus(status: UnifiedStatus): string {
     for (const j of status.jobs) {
       const state = j.enabled ? "enabled" : "disabled";
       const lastStr = j.lastStatus ?? "never";
-      lines.push(`  ${j.id}\t${j.name}\t${state}\t${j.schedule}\tnext=${j.nextRunAtMs ?? "none"}\tlast: ${lastStr} (${j.runCount} runs)`);
+      lines.push(`  ${j.id}\t${j.name}\t${state}\t${j.schedule}\tnext: ${formatNextRunAt(j.nextRunAtMs)}\tlast: ${lastStr} (${j.runCount} runs)`);
     }
   }
 
