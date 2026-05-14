@@ -15,6 +15,7 @@ import {
   buildProjectSkillPrompt,
   buildStartForegroundArgs,
   createProjectDescriptionTempFile,
+  formatAddedJob,
   parseProjectDescriptionFile,
   stopScheduler,
 } from "./cli.js";
@@ -143,6 +144,60 @@ describe("a-exp core scheduler", () => {
     expect(input.payload.cwd).toBe("/repo");
     expect(input.payload.maxDurationMs).toBe(1_800_000);
     expect(input.payload.message).toContain("Run one a-exp work cycle.");
+  });
+
+  it("treats add positional shorthand as project name and project prompt", () => {
+    const workspace = workspacePaths("/repo");
+    const input = buildSchedulerAddInput(
+      {},
+      workspace,
+      {
+        name: "work-cycle",
+        cron: "0 * * * *",
+        messageDefault: true,
+        model: "strong",
+      },
+      "demo",
+    );
+
+    expect(input.name).toBe("demo");
+    expect(input.schedule.kind).toBe("cron");
+    expect(input.payload.model).toBe("strong");
+    expect(input.payload.message).toContain("projects/demo");
+  });
+
+  it("formats added job details", () => {
+    const output = formatAddedJob({
+      id: "job_123",
+      name: "demo",
+      schedule: { kind: "cron", expr: "0 * * * *", tz: "America/New_York" },
+      payload: {
+        message: "Run one a-exp work cycle scoped to projects/demo.\nRead the project README and TASKS.",
+        model: "strong",
+        cwd: "/repo",
+        maxDurationMs: 1_800_000,
+      },
+      enabled: true,
+      createdAtMs: 0,
+      state: {
+        nextRunAtMs: 1_800_000,
+        lastRunAtMs: null,
+        lastStatus: null,
+        lastError: null,
+        lastDurationMs: null,
+        runCount: 0,
+      },
+    });
+
+    expect(output).toContain("Added job demo (job_123)");
+    expect(output).toContain("Cron: 0 * * * *");
+    expect(output).toContain("Timezone: America/New_York");
+    expect(output).toContain("Model: strong");
+    expect(output).toContain("Project: demo");
+    expect(output).toContain("Cwd: /repo");
+    expect(output).toContain("Max duration: 1800000ms");
+    expect(output).toContain("Enabled: yes");
+    expect(output).toContain("Next run: 1970-01-01T00:30:00.000Z");
   });
 
   it("parses report tasks without treating multi-bullet Done when criteria as tasks", () => {

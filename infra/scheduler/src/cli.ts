@@ -80,7 +80,7 @@ Commands:
   packet <project> <target> Run the packet skill for an implementation handoff
   start                     Run the scheduler daemon
   stop                      Stop the running scheduler daemon
-  add <options>             Add a scheduled job
+  add [project] <options>   Add a scheduled job
   list                      List jobs
   remove <id>               Remove a job
   run <id>                  Run a job now
@@ -122,6 +122,7 @@ Packet options:
   --dry-run                 Print the packet-skill prompt without running it
 
 Add options:
+  [project]                 Shorthand for --name <project> --message-project <project>
   --name <name>             Job name
   --cron <expr>             Cron expression, e.g. "0 * * * *"
   --every <ms>              Interval in milliseconds
@@ -280,8 +281,9 @@ export function buildSchedulerAddInput(
   opts: Record<string, string | true>,
   workspace: Workspace,
   defaults: SchedulerAddDefaults = {},
+  shorthandProject?: string,
 ): JobCreate {
-  const name = optionString(opts, "name") ?? defaults.name ?? "";
+  const name = optionString(opts, "name") ?? shorthandProject ?? defaults.name ?? "";
   if (!name) throw new Error("Error: --name required.");
 
   const cliCron = optionString(opts, "cron");
@@ -304,6 +306,7 @@ export function buildSchedulerAddInput(
   if (optionFlag(opts, "message-default")) message = defaultWorkCyclePrompt();
   else if (optionString(opts, "message-project")) message = projectWorkCyclePrompt(optionString(opts, "message-project")!);
   else if (optionString(opts, "message")) message = optionString(opts, "message")!;
+  else if (shorthandProject) message = projectWorkCyclePrompt(shorthandProject);
   else if (defaults.messageDefault) message = defaultWorkCyclePrompt();
   else if (defaults.messageProject) message = projectWorkCyclePrompt(defaults.messageProject);
   else if (defaults.message) message = defaults.message;
@@ -519,6 +522,33 @@ async function runManualSkillJob(opts: {
 function formatSchedule(schedule: Schedule): string {
   if (schedule.kind === "cron") return schedule.tz ? `${schedule.expr} (${schedule.tz})` : schedule.expr;
   return `every ${schedule.everyMs}ms`;
+}
+
+function inferProjectFromMessage(message: string): string | undefined {
+  const firstLine = message.split("\n", 1)[0] ?? "";
+  const match = firstLine.match(/^Run one a-exp work cycle scoped to projects\/(.+)\.$/);
+  return match?.[1];
+}
+
+function formatTimestamp(ms: number | null): string {
+  return ms === null ? "none" : new Date(ms).toISOString();
+}
+
+export function formatAddedJob(job: Job): string {
+  const lines = [`Added job ${job.name} (${job.id})`];
+  if (job.schedule.kind === "cron") {
+    lines.push(`  Cron: ${job.schedule.expr}`);
+    lines.push(`  Timezone: ${job.schedule.tz ?? "default"}`);
+  } else {
+    lines.push(`  Interval: ${job.schedule.everyMs}ms`);
+  }
+  lines.push(`  Model: ${job.payload.model ?? "default"}`);
+  lines.push(`  Project: ${inferProjectFromMessage(job.payload.message) ?? "none"}`);
+  lines.push(`  Cwd: ${job.payload.cwd ?? "default"}`);
+  lines.push(`  Max duration: ${job.payload.maxDurationMs !== undefined ? `${job.payload.maxDurationMs}ms` : "default"}`);
+  lines.push(`  Enabled: ${job.enabled ? "yes" : "no"}`);
+  lines.push(`  Next run: ${formatTimestamp(job.state.nextRunAtMs)}`);
+  return lines.join("\n");
 }
 
 function toStatusJob(job: Job): StatusJob {
@@ -852,20 +882,25 @@ async function cmdStop(repo?: string): Promise<void> {
 async function cmdAdd(args: string[], repo?: string): Promise<void> {
   const workspace = requireWorkspace(repo);
   configureWorkspaceRuntime(workspace);
-  const opts = parseOptions(args);
+  const addBooleanOptions = new Set(["message-default"]);
+  const opts = parseOptions(args, addBooleanOptions);
+  const positionals = positionalArgs(args, addBooleanOptions);
+  if (positionals.length > 1) fail("Error: add accepts at most one project shorthand argument.");
+  const shorthandProject = positionals[0];
   let input: JobCreate;
   try {
     input = buildSchedulerAddInput(
       opts,
       workspace,
       readWorkspaceConfig(workspace.configPath).scheduler?.addDefaults ?? {},
+      shorthandProject,
     );
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
   const store = storeFor(workspace);
   const job = await store.add(input);
-  console.log(`Added job ${job.name} (${job.id})`);
+  console.log(formatAddedJob(job));
 }
 
 async function cmdList(repo?: string): Promise<void> {

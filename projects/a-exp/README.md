@@ -22,6 +22,25 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Added project shorthand for scheduler jobs)
+
+Changed `a-exp add <project>` to behave like
+`a-exp add --name <project> --message-project <project>`, while preserving
+explicit flag precedence over the shorthand. The add success output now prints
+the schedule details, model, inferred project, cwd, max duration, enabled state,
+and next run timestamp.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 24 tests.
+
+Files:
+- `README.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Committed initialized workspaces)
 
 Changed `a-exp init` so the target folder is initialized as a git repository

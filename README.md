@@ -110,6 +110,7 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ./a-exp kanban --quick [project]
 ./a-exp packet <project> <target-package> [instructions...]
 ./a-exp add
+./a-exp add <project>
 ./a-exp list
 ./a-exp run <job-id>
 ./a-exp status
@@ -123,7 +124,10 @@ developing or when you want startup and runtime logs in the current terminal.
 
 `./a-exp add` reads default options from `.a-exp/config.yaml` under
 `scheduler.add_defaults`. Explicit flags such as `--cron`, `--every`, `--model`,
-`--message`, and `--max-duration-ms` override those defaults.
+`--message`, and `--max-duration-ms` override those defaults. A positional
+project name is shorthand for `--name <project> --message-project <project>`,
+so `./a-exp add my-research-project` creates a job named `my-research-project`
+that runs against `projects/my-research-project`.
 
 `./a-exp project` opens a temporary project description file in VS Code and runs
 the project skill after the editor closes. Pass `./a-exp project <file>` to use

@@ -9,6 +9,7 @@ Minimal cron scheduler for recurring agent sessions, Slack notifications, status
 ./a-exp start
 ./a-exp stop
 ./a-exp add
+./a-exp add my-research-project
 ./a-exp list
 ./a-exp run <job-id>
 ./a-exp enable <job-id>
@@ -39,8 +40,11 @@ records the sibling kit commit in `.a-exp/kit.lock.yaml`.
 
 `init` writes scheduler add defaults in `.a-exp/config.yaml` under
 `scheduler.add_defaults`. By default, `./a-exp add` creates an hourly
-`work-cycle` job with the default work-cycle prompt and the `strong` model tier;
-explicit add flags override the config values.
+`work-cycle` job with the default work-cycle prompt and the `strong` model tier.
+Pass a project name as shorthand, for example `./a-exp add my-research-project`,
+to create an hourly job named `my-research-project` with the project-scoped
+work-cycle prompt for `projects/my-research-project`. Explicit add flags
+override the shorthand and config values.
 
 ## Build
 
