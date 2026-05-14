@@ -203,6 +203,7 @@ Done when: Reports stay readable.
       maxCostItems: "2",
       maxResultBullets: "3",
       dryRun: true,
+      singleOutput: "_quick.md",
     })).toEqual([
       "/repo/.agents/skills/kanban/scripts/generate_kanban.py",
       "--repo-root",
@@ -214,6 +215,8 @@ Done when: Reports stay readable.
       "2",
       "--max-result-bullets",
       "3",
+      "--single-output",
+      "_quick.md",
       "--dry-run",
     ]);
   });

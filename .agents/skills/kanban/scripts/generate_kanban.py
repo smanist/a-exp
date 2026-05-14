@@ -343,6 +343,10 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Print output instead of writing files")
     parser.add_argument("--max-cost-items", type=int, default=8)
     parser.add_argument("--max-result-bullets", type=int, default=3)
+    parser.add_argument(
+        "--single-output",
+        help="Write all generated project summaries into one Markdown file under --output-dir",
+    )
     args = parser.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
@@ -363,6 +367,18 @@ def main() -> int:
     summaries = {}
     for project_dir in project_dirs:
         summaries[project_dir.name] = generate_project(repo_root, project_dir, args)
+
+    if args.single_output:
+        content = "\n\n".join(summaries[project] for project in sorted(summaries))
+        if args.dry_run:
+            print(f"--- {args.single_output} ---")
+            print(content)
+            return 0
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / args.single_output
+        output_path.write_text(content, encoding="utf-8")
+        print(output_path)
+        return 0
 
     if args.dry_run:
         for project, content in summaries.items():

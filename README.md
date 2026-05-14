@@ -124,7 +124,8 @@ the project skill after the editor closes. Pass `./a-exp project <file>` to use
 an existing description file.
 
 `./a-exp kanban --quick` runs the deterministic kanban generator directly,
-without launching an agent session.
+without launching an agent session, and writes one combined
+`reports/kanban/_quick.md` file.
 
 Global workspace override:
 

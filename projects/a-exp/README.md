@@ -22,6 +22,28 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-13 (Made quick kanban output a single file)
+
+Changed deterministic quick kanban output so `a-exp kanban --quick` writes one
+combined Markdown file, `_quick.md`, instead of one file per project. The kanban
+generator gained `--single-output FILE` for direct use, and the quick CLI path
+always passes `--single-output _quick.md`.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 21 tests.
+- `python .agents/skills/kanban/scripts/generate_kanban.py --repo-root . --single-output _quick.md --dry-run --max-cost-items 1 --max-result-bullets 1`: passed, printed one `_quick.md` dry-run block.
+- `./a-exp kanban --quick --output-dir /private/tmp/a-exp-kanban-quick-check --max-cost-items 1 --max-result-bullets 1`: passed, wrote `/private/tmp/a-exp-kanban-quick-check/_quick.md`.
+- `find /private/tmp/a-exp-kanban-quick-check -maxdepth 1 -type f -print | sort`: passed, listed only `_quick.md`.
+
+Files:
+- `.agents/skills/kanban/SKILL.md`
+- `.agents/skills/kanban/scripts/generate_kanban.py`
+- `README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-13 (Added deterministic kanban quick mode)
 
 Added `a-exp kanban --quick` as a direct deterministic path to the kanban

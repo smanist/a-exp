@@ -363,6 +363,7 @@ export interface KanbanOptions {
   maxCostItems?: string;
   maxResultBullets?: string;
   dryRun?: boolean;
+  singleOutput?: string;
 }
 
 export function buildKanbanSkillPrompt(opts: KanbanOptions): string {
@@ -390,6 +391,7 @@ export function buildDeterministicKanbanArgs(workspaceRoot: string, opts: Kanban
   if (opts.outputDir) args.push("--output-dir", opts.outputDir);
   if (opts.maxCostItems) args.push("--max-cost-items", opts.maxCostItems);
   if (opts.maxResultBullets) args.push("--max-result-bullets", opts.maxResultBullets);
+  if (opts.singleOutput) args.push("--single-output", opts.singleOutput);
   if (opts.dryRun) args.push("--dry-run");
   return args;
 }
@@ -574,7 +576,7 @@ async function cmdKanban(args: string[], repo?: string): Promise<void> {
     dryRun: opts["dry-run"] === true,
   };
   if (opts.quick === true || opts.deterministic === true) {
-    await runDeterministicKanban(workspace, kanbanOpts);
+    await runDeterministicKanban(workspace, { ...kanbanOpts, singleOutput: "_quick.md" });
     return;
   }
 

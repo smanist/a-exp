@@ -69,3 +69,4 @@ Useful options:
 - `--dry-run`: print summaries instead of writing files.
 - `--max-cost-items N`: limit how many log/session cost entries appear in the cost card.
 - `--max-result-bullets N`: limit finding bullets per experiment or report card.
+- `--single-output FILE`: write all generated project summaries into one Markdown file under the output directory.
