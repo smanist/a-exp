@@ -399,7 +399,7 @@ export function createProjectDescriptionTempFile(stateDir: string): string {
   const parent = join(stateDir, "tmp", "project");
   mkdirSync(parent, { recursive: true });
   const dir = mkdtempSync(join(parent, "a-exp-project-"));
-  const path = join(dir, "project.md");
+  const path = join(dir, "project.txt");
   writeFileSync(path, PROJECT_DESCRIPTION_TEMPLATE, "utf-8");
   return path;
 }
