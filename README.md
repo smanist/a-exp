@@ -139,7 +139,7 @@ job-management fields needed by `run`, `enable`, `disable`, and `remove`: id,
 name, enabled state, schedule, human-readable next run, last status, and run
 count.
 
-`./a-exp project` opens a temporary editable project description text file under
+`./a-exp project` opens a temporary project description file under
 `.a-exp/tmp/project/` in VS Code and runs the project skill after the editor
 closes. Pass `./a-exp project <file>` to use an existing description file.
 

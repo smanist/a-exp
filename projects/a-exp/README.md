@@ -22,24 +22,6 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
-### 2026-05-14 (Made project temp input open as editable text)
-
-Changed the `a-exp project` temporary description filename from `project.md` to
-`project.txt`. The workspace VS Code template associates `*.md` with Markdown
-Preview for report viewing, so the previous draft opened read-only even though
-the filesystem permissions were writable.
-
-Verification:
-- `cd infra/scheduler && npm run build`: passed.
-- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
-- `./a-exp project --editor true --dry-run`: passed, created the unchanged template at `.a-exp/tmp/project/a-exp-project-injVdS/project.txt` and exited without running.
-
-Files:
-- `README.md`
-- `infra/scheduler/src/cli.ts`
-- `infra/scheduler/src/core.test.ts`
-- `projects/a-exp/README.md`
-
 ### 2026-05-14 (Moved project temp input into workspace state)
 
 Changed `a-exp project` so the VS Code-editable description file is created

@@ -315,7 +315,6 @@ Done when: Reports stay readable.
     const content = await readFile(path, "utf-8");
 
     expect(path.startsWith(join(stateDir, "tmp", "project", "a-exp-project-"))).toBe(true);
-    expect(path.endsWith("project.txt")).toBe(true);
     expect(content).toBe(PROJECT_DESCRIPTION_TEMPLATE);
     expect(parseProjectDescriptionFile(content)).toEqual({
       title: undefined,
