@@ -1,4 +1,5 @@
-import { chmod, mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readlink, realpath, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
@@ -102,6 +103,10 @@ describe("a-exp core scheduler", () => {
       expect(await readFile(agentsPath, "utf-8")).toBe("custom instructions\n");
       expect(await readlink(join(repo, ".agents"))).toBe("../a-exp/.agents");
       expect(await readlink(join(repo, "docs"))).toBe("../a-exp/docs");
+      const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: repo, encoding: "utf-8" }).trim();
+      expect(await realpath(gitRoot)).toBe(await realpath(repo));
+      expect(execFileSync("git", ["log", "-1", "--format=%s"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("Initialize a-exp workspace for demo");
+      expect(execFileSync("git", ["status", "--short"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("?? AGENTS.md");
       const config = parseWorkspaceConfig(await readFile(join(repo, ".a-exp", "config.yaml"), "utf-8"));
       expect(config.scheduler?.addDefaults).toMatchObject({
         name: "work-cycle",

@@ -22,6 +22,22 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Committed initialized workspaces)
+
+Changed `a-exp init` so the target folder is initialized as a git repository
+when it is not already the repo root. The init flow now stages only the scaffold
+paths it creates and commits them as `Initialize a-exp workspace for <project>`,
+leaving pre-existing user files untouched.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 22 tests.
+
+Files:
+- `infra/scheduler/src/workspace.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Added scheduler add defaults)
 
 Added workspace-level scheduler defaults under `.a-exp/config.yaml`

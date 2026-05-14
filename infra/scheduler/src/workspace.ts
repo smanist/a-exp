@@ -202,88 +202,106 @@ export function legacyWorkspacePaths(root: string): Workspace {
 
 export async function initWorkspace(root: string, project: string): Promise<string[]> {
   const workspace = workspacePaths(root);
+  await mkdir(workspace.root, { recursive: true });
+  if (!isGitRepositoryRoot(workspace.root)) {
+    gitCommand(workspace.root, ["init"]);
+  }
   const kit = resolveSiblingKit(workspace.root);
   const created: string[] = [];
+  const stagePaths: string[] = [];
   const projectDir = join(workspace.root, "projects", project);
   const moduleDir = join(workspace.root, "modules", project);
 
-  await ensureDir(workspace.stateDir, created, workspace.root);
+  await ensureDir(workspace.stateDir, created, stagePaths, workspace.root);
   await ensureFile(
     workspace.configPath,
     defaultConfig(project, kit.selfHosting),
     created,
+    stagePaths,
     workspace.root,
   );
   await ensureFile(
     join(workspace.stateDir, "kit.lock.yaml"),
     kitLock(kit),
     created,
+    stagePaths,
     workspace.root,
   );
   await ensureFile(
     join(workspace.root, ".gitignore"),
     defaultGitignore(),
     created,
+    stagePaths,
     workspace.root,
   );
-  await ensureSymlink(join(workspace.root, ".agents"), "../a-exp/.agents", created, workspace.root, kit.selfHosting);
-  await ensureSymlink(join(workspace.root, "docs"), "../a-exp/docs", created, workspace.root, kit.selfHosting);
+  await ensureSymlink(join(workspace.root, ".agents"), "../a-exp/.agents", created, stagePaths, workspace.root, kit.selfHosting);
+  await ensureSymlink(join(workspace.root, "docs"), "../a-exp/docs", created, stagePaths, workspace.root, kit.selfHosting);
   await ensureFile(
     join(workspace.root, "AGENTS.md"),
     defaultAgents(project),
     created,
+    stagePaths,
     workspace.root,
   );
-  await ensureDir(join(projectDir, "plans"), created, workspace.root);
-  await ensureFile(join(projectDir, "plans", ".gitkeep"), "", created, workspace.root);
-  await ensureDir(join(projectDir, "experiments"), created, workspace.root);
-  await ensureFile(join(projectDir, "experiments", ".gitkeep"), "", created, workspace.root);
+  await ensureDir(join(projectDir, "plans"), created, stagePaths, workspace.root);
+  await ensureFile(join(projectDir, "plans", ".gitkeep"), "", created, stagePaths, workspace.root);
+  await ensureDir(join(projectDir, "experiments"), created, stagePaths, workspace.root);
+  await ensureFile(join(projectDir, "experiments", ".gitkeep"), "", created, stagePaths, workspace.root);
   await ensureFile(
     join(projectDir, "README.md"),
     defaultProjectReadme(project),
     created,
+    stagePaths,
     workspace.root,
   );
   await ensureFile(
     join(projectDir, "TASKS.md"),
     defaultTasks(project),
     created,
+    stagePaths,
     workspace.root,
   );
   await ensureFile(
     join(projectDir, "budget.yaml"),
     defaultBudget(),
     created,
+    stagePaths,
     workspace.root,
   );
   await ensureFile(
     join(projectDir, "ledger.yaml"),
     defaultLedger(),
     created,
+    stagePaths,
     workspace.root,
   );
   await ensureFile(
     join(moduleDir, "README.md"),
     defaultModuleReadme(project),
     created,
+    stagePaths,
     workspace.root,
   );
-  await ensureDir(join(moduleDir, "artifacts"), created, workspace.root);
-  await ensureFile(join(moduleDir, "artifacts", ".gitkeep"), "", created, workspace.root);
+  await ensureDir(join(moduleDir, "artifacts"), created, stagePaths, workspace.root);
+  await ensureFile(join(moduleDir, "artifacts", ".gitkeep"), "", created, stagePaths, workspace.root);
   await ensureFile(
     join(workspace.root, "modules", "registry.yaml"),
     defaultRegistry(project),
     created,
+    stagePaths,
     workspace.root,
   );
-  await ensureDir(join(workspace.root, "reports"), created, workspace.root);
-  await ensureFile(join(workspace.root, "reports", ".gitkeep"), "", created, workspace.root);
+  await ensureDir(join(workspace.root, "reports"), created, stagePaths, workspace.root);
+  await ensureFile(join(workspace.root, "reports", ".gitkeep"), "", created, stagePaths, workspace.root);
   await ensureFile(
     join(workspace.root, "APPROVAL_QUEUE.md"),
     defaultApprovalQueue(),
     created,
+    stagePaths,
     workspace.root,
   );
+
+  commitCreatedWorkspaceFiles(workspace.root, stagePaths, project);
 
   return created;
 }
@@ -307,30 +325,37 @@ function resolveSiblingKit(root: string): {
   };
 }
 
-async function ensureDir(path: string, created: string[], root: string): Promise<void> {
+async function ensureDir(path: string, created: string[], stagePaths: string[], root: string): Promise<void> {
   if (existsSync(path)) return;
   await mkdir(path, { recursive: true });
-  created.push(relativePath(root, path) + "/");
+  const relPath = relativePath(root, path);
+  created.push(relPath + "/");
+  stagePaths.push(relPath);
 }
 
-async function ensureFile(path: string, content: string, created: string[], root: string): Promise<void> {
+async function ensureFile(path: string, content: string, created: string[], stagePaths: string[], root: string): Promise<void> {
   if (existsSync(path)) return;
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content, "utf-8");
-  created.push(relativePath(root, path));
+  const relPath = relativePath(root, path);
+  created.push(relPath);
+  stagePaths.push(relPath);
 }
 
 async function ensureSymlink(
   path: string,
   target: string,
   created: string[],
+  stagePaths: string[],
   root: string,
   skip: boolean,
 ): Promise<void> {
   if (skip || existsSync(path)) return;
   await mkdir(dirname(path), { recursive: true });
   await symlink(target, path, "dir");
-  created.push(`${relativePath(root, path)} -> ${target}`);
+  const relPath = relativePath(root, path);
+  created.push(`${relPath} -> ${target}`);
+  stagePaths.push(relPath);
 }
 
 function relativePath(root: string, path: string): string {
@@ -343,6 +368,43 @@ function gitOutput(cwd: string, args: string[]): string | null {
   } catch {
     return null;
   }
+}
+
+function gitCommand(cwd: string, args: string[]): void {
+  execFileSync("git", args, {
+    cwd,
+    env: gitCommitEnv(),
+    stdio: "ignore",
+  });
+}
+
+function isGitRepositoryRoot(root: string): boolean {
+  const topLevel = gitOutput(root, ["rev-parse", "--show-toplevel"]);
+  return topLevel !== null && resolve(topLevel) === root;
+}
+
+function commitCreatedWorkspaceFiles(root: string, stagePaths: string[], project: string): void {
+  const uniqueStagePaths = Array.from(new Set(stagePaths));
+  if (uniqueStagePaths.length === 0) return;
+
+  gitCommand(root, ["add", "--", ...uniqueStagePaths]);
+  try {
+    execFileSync("git", ["diff", "--cached", "--quiet", "--exit-code"], { cwd: root, stdio: "ignore" });
+    return;
+  } catch {
+    // Exit code 1 means there are staged changes to commit.
+  }
+  gitCommand(root, ["-c", "commit.gpgsign=false", "commit", "-m", `Initialize a-exp workspace for ${project}`]);
+}
+
+function gitCommitEnv(): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    GIT_AUTHOR_NAME: process.env.GIT_AUTHOR_NAME ?? "a-exp",
+    GIT_AUTHOR_EMAIL: process.env.GIT_AUTHOR_EMAIL ?? "a-exp@example.local",
+    GIT_COMMITTER_NAME: process.env.GIT_COMMITTER_NAME ?? "a-exp",
+    GIT_COMMITTER_EMAIL: process.env.GIT_COMMITTER_EMAIL ?? "a-exp@example.local",
+  };
 }
 
 function titleFromProject(project: string): string {
