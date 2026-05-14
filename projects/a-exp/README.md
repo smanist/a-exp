@@ -22,6 +22,30 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Removed scheduler list command)
+
+Removed `a-exp list` from the public scheduler CLI, help text, docs, and
+scaffolded workspace instructions. `a-exp status` remains the consolidated
+operator view, and its job rows now include id, name, enabled state, schedule,
+raw next run timestamp, last status, and run count, including the `last: never
+(0 runs)` display for jobs that have not run.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+- `./a-exp list`: failed as expected with `Unknown command: list`.
+- `./a-exp status`: passed, printed daemon/session/experiment/job summary.
+
+Files:
+- `AGENTS.md`
+- `README.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/status.ts`
+- `infra/scheduler/src/workspace.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Merged job list details into status)
 
 Changed the `a-exp status` jobs section to use the compact job-management row

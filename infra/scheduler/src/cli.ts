@@ -81,7 +81,6 @@ Commands:
   start                     Run the scheduler daemon
   stop                      Stop the running scheduler daemon
   add [project] <options>   Add a scheduled job
-  list                      List jobs
   remove <id>               Remove a job
   run <id>                  Run a job now
   enable <id>               Enable a job
@@ -596,7 +595,6 @@ async function main(): Promise<void> {
   if (cmd === "start") return cmdStart(args.slice(1), parsed.repo);
   if (cmd === "stop") return cmdStop(parsed.repo);
   if (cmd === "add") return cmdAdd(args.slice(1), parsed.repo);
-  if (cmd === "list") return cmdList(parsed.repo);
   if (cmd === "remove") return cmdRemove(requireArg(args[1], "job ID"), parsed.repo);
   if (cmd === "run") return cmdRun(requireArg(args[1], "job ID"), args.slice(2), parsed.repo);
   if (cmd === "enable") return cmdSetEnabled(requireArg(args[1], "job ID"), true, parsed.repo);
@@ -901,16 +899,6 @@ async function cmdAdd(args: string[], repo?: string): Promise<void> {
   const store = storeFor(workspace);
   const job = await store.add(input);
   console.log(formatAddedJob(job));
-}
-
-async function cmdList(repo?: string): Promise<void> {
-  const workspace = requireWorkspace(repo);
-  const store = storeFor(workspace);
-  await store.load();
-  for (const job of store.list()) {
-    const state = job.enabled ? "enabled" : "disabled";
-    console.log(`${job.id}\t${job.name}\t${state}\t${formatSchedule(job.schedule)}\tnext=${job.state.nextRunAtMs ?? "none"}`);
-  }
 }
 
 async function cmdRemove(id: string, repo?: string): Promise<void> {

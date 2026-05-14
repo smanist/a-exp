@@ -191,7 +191,8 @@ export function formatUnifiedStatus(status: UnifiedStatus): string {
     lines.push("--- Jobs ---");
     for (const j of status.jobs) {
       const state = j.enabled ? "enabled" : "disabled";
-      lines.push(`  ${j.id}\t${j.name}\t${state}\t${j.schedule}\tnext=${j.nextRunAtMs ?? "none"}`);
+      const lastStr = j.lastStatus ?? "never";
+      lines.push(`  ${j.id}\t${j.name}\t${state}\t${j.schedule}\tnext=${j.nextRunAtMs ?? "none"}\tlast: ${lastStr} (${j.runCount} runs)`);
     }
   }
 

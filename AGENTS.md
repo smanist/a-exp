@@ -98,7 +98,7 @@ The public scheduler entrypoint is `./a-exp`.
 Retained commands:
 
 - `start`, `stop`
-- `add`, `list`, `remove`, `run`, `enable`, `disable`
+- `add`, `remove`, `run`, `enable`, `disable`
 - `project`, `kanban`, `packet`
 - `status`, `heartbeat`, `check-health`
 

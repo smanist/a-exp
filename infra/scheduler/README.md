@@ -10,8 +10,8 @@ Minimal cron scheduler for recurring agent sessions, Slack notifications, status
 ./a-exp stop
 ./a-exp add
 ./a-exp add my-research-project
-./a-exp list
 ./a-exp run <job-id>
+./a-exp remove <job-id>
 ./a-exp enable <job-id>
 ./a-exp disable <job-id>
 ./a-exp status
@@ -46,9 +46,9 @@ to create an hourly job named `my-research-project` with the project-scoped
 work-cycle prompt for `projects/my-research-project`. Explicit add flags
 override the shorthand and config values.
 
-`./a-exp status` is the main operator view. Its jobs section includes the same
-job-management fields as `./a-exp list`: id, name, enabled state, schedule, and
-next run timestamp.
+`./a-exp status` is the main operator view. Its jobs section includes the
+job-management fields needed by `run`, `enable`, `disable`, and `remove`: id,
+name, enabled state, schedule, next run timestamp, last status, and run count.
 
 ## Build
 

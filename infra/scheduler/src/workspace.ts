@@ -502,7 +502,7 @@ Do not supervise long-running experiments in an agent session. Keep experiment r
 Use the installed \`a-exp\` CLI from this workspace:
 
 - \`a-exp start\`, \`a-exp stop\`
-- \`a-exp add\`, \`a-exp list\`, \`a-exp run\`, \`a-exp remove\`, \`a-exp enable\`, \`a-exp disable\`
+- \`a-exp add\`, \`a-exp run\`, \`a-exp remove\`, \`a-exp enable\`, \`a-exp disable\`
 - \`a-exp status\`, \`a-exp heartbeat\`, \`a-exp check-health\`
 
 The scheduler must run without Slack tokens; Slack functions should degrade to no-ops.

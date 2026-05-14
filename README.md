@@ -111,8 +111,10 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ./a-exp packet <project> <target-package> [instructions...]
 ./a-exp add
 ./a-exp add <project>
-./a-exp list
 ./a-exp run <job-id>
+./a-exp remove <job-id>
+./a-exp enable <job-id>
+./a-exp disable <job-id>
 ./a-exp status
 ./a-exp heartbeat
 ./a-exp check-health --notify
@@ -129,9 +131,9 @@ project name is shorthand for `--name <project> --message-project <project>`,
 so `./a-exp add my-research-project` creates a job named `my-research-project`
 that runs against `projects/my-research-project`.
 
-`./a-exp status` is the main operator view. Its jobs section includes the same
-job-management fields as `./a-exp list`: id, name, enabled state, schedule, and
-next run timestamp.
+`./a-exp status` is the main operator view. Its jobs section includes the
+job-management fields needed by `run`, `enable`, `disable`, and `remove`: id,
+name, enabled state, schedule, next run timestamp, last status, and run count.
 
 `./a-exp project` opens a temporary project description file in VS Code and runs
 the project skill after the editor closes. Pass `./a-exp project <file>` to use

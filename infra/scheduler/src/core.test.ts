@@ -201,13 +201,13 @@ describe("a-exp core scheduler", () => {
     expect(output).toContain("Next run: 1970-01-01T00:30:00.000Z");
   });
 
-  it("formats status jobs as the full job list with ids", () => {
+  it("formats status jobs as the full job list with ids and run summary", () => {
     const output = formatUnifiedStatus({
       timestamp: "1970-01-01T00:00:00.000Z",
       summary: {
         activeSessions: 0,
         runningExperiments: 0,
-        totalJobs: 1,
+        totalJobs: 2,
         enabledJobs: 1,
         daemonState: "stopped",
       },
@@ -222,15 +222,23 @@ describe("a-exp core scheduler", () => {
         lastStatus: "ok",
         lastRunAtMs: 1_000,
         runCount: 2,
+      }, {
+        id: "job_456",
+        name: "fresh",
+        enabled: false,
+        schedule: "every 60000ms",
+        nextRunAtMs: null,
+        lastStatus: null,
+        lastRunAtMs: null,
+        runCount: 0,
       }],
     });
 
     expect(output).toContain("Daemon: stopped");
-    expect(output).toContain("Active Sessions: 0  |  Running Experiments: 0  |  Jobs: 1/1 enabled");
+    expect(output).toContain("Active Sessions: 0  |  Running Experiments: 0  |  Jobs: 1/2 enabled");
     expect(output).toContain("--- Jobs ---");
-    expect(output).toContain("job_123\tdemo\tenabled\t0 * * * *\tnext=1800000");
-    expect(output).not.toContain("last:");
-    expect(output).not.toContain("runs");
+    expect(output).toContain("job_123\tdemo\tenabled\t0 * * * *\tnext=1800000\tlast: ok (2 runs)");
+    expect(output).toContain("job_456\tfresh\tdisabled\tevery 60000ms\tnext=none\tlast: never (0 runs)");
   });
 
   it("parses report tasks without treating multi-bullet Done when criteria as tasks", () => {
