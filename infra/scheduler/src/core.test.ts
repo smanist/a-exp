@@ -95,6 +95,9 @@ describe("a-exp core scheduler", () => {
       expect(created).toContain("docs -> ../a-exp/docs");
       expect(created).toContain("projects/");
       expect(created).toContain("projects/.gitkeep");
+      expect(created).toContain("projects/a-exp/");
+      expect(created).toContain("projects/a-exp/README.md");
+      expect(created).toContain("projects/a-exp/TASKS.md");
       expect(created).toContain("modules/registry.yaml");
       expect(created).toContain("reports/");
       expect(created).toContain("reports/.gitkeep");
@@ -114,6 +117,12 @@ describe("a-exp core scheduler", () => {
       );
       const configText = await readFile(join(repo, ".a-exp", "config.yaml"), "utf-8");
       expect(configText).not.toContain("default_project");
+      await expect(readFile(join(repo, "projects", "a-exp", "README.md"), "utf-8")).resolves.toContain(
+        "Created by `a-exp init` so workspace-level changes have a durable project log",
+      );
+      await expect(readFile(join(repo, "projects", "a-exp", "TASKS.md"), "utf-8")).resolves.toContain(
+        "# a-exp - Next actions",
+      );
       expect(await readFile(join(repo, "modules", "registry.yaml"), "utf-8")).toBe("entries: []\n");
       const config = parseWorkspaceConfig(configText);
       expect(config.scheduler?.addDefaults).toMatchObject({

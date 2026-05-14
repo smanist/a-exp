@@ -38,8 +38,9 @@ Repos/
 
 `a-exp init` symlinks `.agents` and `docs` from the sibling a-exp repo, records
 the kit commit in `.a-exp/kit.lock.yaml`, writes `.vscode/` operator tasks, and
-creates placeholder `projects/`, `modules/registry.yaml`, and `reports/`
-workspace paths. Create project memory later with `a-exp project`.
+creates `projects/a-exp/` for workspace maintenance logs plus
+`modules/registry.yaml` and `reports/` workspace paths. Create domain project
+memory later with `a-exp project`.
 `a-exp` discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
 `--repo <dir>` when a script or daemon should target a specific repo.
 `a-exp init` also writes scheduler defaults so `a-exp add` creates an hourly
@@ -65,7 +66,7 @@ SLACK_USER_ID=...
 | `infra/scheduler/` | Cron scheduler, session launch, Slack, status, reports |
 | `infra/experiment-runner/` | Fire-and-forget experiment execution with artifacts |
 | `infra/experiment-validator/` | Experiment record validation |
-| `projects/a-exp/` | Support project for maintaining a-exp itself |
+| `projects/a-exp/` | Support project for workspace maintenance logs and tasks |
 | `examples/my-research-project/` | Minimal project scaffold |
 | `docs/schemas/` | File schemas for tasks, logs, budgets, experiments |
 | `docs/conventions/` | Retained conventions for memory, tasks, artifacts, provenance |

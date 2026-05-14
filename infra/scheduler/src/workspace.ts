@@ -258,6 +258,21 @@ export async function initWorkspace(root: string): Promise<string[]> {
   );
   await ensureDir(join(workspace.root, "projects"), created, stagePaths, workspace.root);
   await ensureFile(join(workspace.root, "projects", ".gitkeep"), "", created, stagePaths, workspace.root);
+  await ensureDir(join(workspace.root, "projects", "a-exp"), created, stagePaths, workspace.root);
+  await ensureFile(
+    join(workspace.root, "projects", "a-exp", "README.md"),
+    defaultAExpProjectReadme(),
+    created,
+    stagePaths,
+    workspace.root,
+  );
+  await ensureFile(
+    join(workspace.root, "projects", "a-exp", "TASKS.md"),
+    defaultAExpProjectTasks(),
+    created,
+    stagePaths,
+    workspace.root,
+  );
   await ensureFile(
     join(workspace.root, "modules", "registry.yaml"),
     defaultRegistry(),
@@ -506,6 +521,41 @@ self_hosting: ${kit.selfHosting ? "true" : "false"}
 
 function defaultRegistry(): string {
   return `entries: []
+`;
+}
+
+function defaultAExpProjectReadme(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return `# a-exp
+
+Status: active
+Priority: high
+Mission: Maintain this a-exp workspace as a small, runnable agent research scaffold.
+Done when: Scheduler jobs, project creation, reports, budgets, and experiment tooling stay understandable and verified.
+
+## Context
+
+This support project tracks maintenance work for the workspace itself. Use it for changes to scheduler behavior, Slack operations, project scaffolding, reports, budgets, and experiment tooling.
+
+## Log
+
+### ${today} (Initialized support project)
+
+Created by \`a-exp init\` so workspace-level changes have a durable project log at \`projects/a-exp/README.md\`.
+
+## Open questions
+
+- None yet.
+`;
+}
+
+function defaultAExpProjectTasks(): string {
+  return `# a-exp - Next actions
+
+- [ ] Define workspace maintenance priorities
+  Why: The support project needs concrete follow-up tasks once the workspace has an operating goal.
+  Done when: \`projects/a-exp/TASKS.md\` contains current bounded tasks for this workspace.
+  Priority: medium
 `;
 }
 

@@ -22,6 +22,26 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Added support project to init)
+
+Changed `a-exp init` so new workspaces include a minimal
+`projects/a-exp/README.md` and `projects/a-exp/TASKS.md`. This gives workspace
+maintenance and project-creation follow-up work a durable log target immediately
+after init, while domain project memory still gets created later through
+`a-exp project`.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+
+Files:
+- `README.md`
+- `docs/repo-as-interface.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/workspace.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Moved project temp input into workspace state)
 
 Changed `a-exp project` so the VS Code-editable description file is created

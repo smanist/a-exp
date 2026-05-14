@@ -36,9 +36,10 @@ Repos/
 ```
 
 It creates `.agents -> ../a-exp/.agents`, `docs -> ../a-exp/docs`,
-`.vscode/` operator settings/tasks, placeholder workspace paths, and
-`modules/registry.yaml`, then records the sibling kit commit in
-`.a-exp/kit.lock.yaml`. Create project memory later with `./a-exp project`.
+`.vscode/` operator settings/tasks, `projects/a-exp/` for workspace maintenance
+logs, `reports/`, and `modules/registry.yaml`, then records the sibling kit
+commit in `.a-exp/kit.lock.yaml`. Create domain project memory later with
+`./a-exp project`.
 
 `init` writes scheduler add defaults in `.a-exp/config.yaml` under
 `scheduler.add_defaults`. By default, `./a-exp add` creates an hourly
