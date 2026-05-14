@@ -26,7 +26,14 @@ import { parseProjectReadme } from "./report/data-projects.js";
 import { computeNextRunAtMs } from "./schedule.js";
 import { formatUnifiedStatus } from "./status.js";
 import { JobStore } from "./store.js";
-import { findWorkspaceRoot, initWorkspace, parseWorkspaceConfig, resolveWorkspace, workspacePaths } from "./workspace.js";
+import {
+  BLUEISH_TERMINAL_BACKGROUNDS,
+  findWorkspaceRoot,
+  initWorkspace,
+  parseWorkspaceConfig,
+  resolveWorkspace,
+  workspacePaths,
+} from "./workspace.js";
 
 async function makeSiblingWorkspace(prefix: string): Promise<{ parent: string; repo: string }> {
   const parent = await mkdtemp(join(tmpdir(), prefix));
@@ -109,8 +116,14 @@ describe("a-exp core scheduler", () => {
       expect(await realpath(gitRoot)).toBe(await realpath(repo));
       expect(execFileSync("git", ["log", "-1", "--format=%s"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("Initialize a-exp workspace");
       expect(execFileSync("git", ["status", "--short"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("?? AGENTS.md");
-      await expect(readFile(join(repo, ".vscode", "settings.json"), "utf-8")).resolves.toBe(
-        await readFile(join("templates", "vscode", "settings.json"), "utf-8"),
+      const settingsText = await readFile(join(repo, ".vscode", "settings.json"), "utf-8");
+      const settings = JSON.parse(settingsText) as {
+        "workbench.colorCustomizations"?: { "terminal.background"?: string };
+        "workbench.editorAssociations"?: { "*.md"?: string };
+      };
+      expect(settings["workbench.editorAssociations"]?.["*.md"]).toBe("vscode.markdown.preview.editor");
+      expect(BLUEISH_TERMINAL_BACKGROUNDS).toContain(
+        settings["workbench.colorCustomizations"]?.["terminal.background"],
       );
       await expect(readFile(join(repo, ".vscode", "tasks.json"), "utf-8")).resolves.toBe(
         await readFile(join("templates", "vscode", "tasks.json"), "utf-8"),

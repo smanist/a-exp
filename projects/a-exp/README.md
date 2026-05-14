@@ -22,6 +22,22 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Randomized init terminal background)
+
+Changed `a-exp init` so newly created `.vscode/settings.json` files preserve
+the base VS Code settings template and add a randomly selected blue-ish
+`workbench.colorCustomizations.terminal.background` value. Existing settings
+files are still left untouched by init.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test -- core.test.ts`: passed, 1 file and 24 tests.
+
+Files:
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/workspace.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Added support project to init)
 
 Changed `a-exp init` so new workspaces include a minimal

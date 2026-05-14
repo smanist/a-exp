@@ -10,6 +10,17 @@ export const CONFIG_PATH = join(WORKSPACE_DIR, "config.yaml");
 export const LAYOUT_VERSION = 1;
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 
+export const BLUEISH_TERMINAL_BACKGROUNDS = [
+  "#1f4fd8",
+  "#2563eb",
+  "#2f5bd3",
+  "#3b5bdb",
+  "#3f51e6",
+  "#5351e6",
+  "#0f62b8",
+  "#1769aa",
+];
+
 export interface Workspace {
   root: string;
   configPath: string;
@@ -235,7 +246,7 @@ export async function initWorkspace(root: string): Promise<string[]> {
   await ensureDir(join(workspace.root, ".vscode"), created, stagePaths, workspace.root);
   await ensureFile(
     join(workspace.root, ".vscode", "settings.json"),
-    vscodeTemplate("settings.json"),
+    vscodeSettingsTemplate(),
     created,
     stagePaths,
     workspace.root,
@@ -493,6 +504,25 @@ The scheduler must run without Slack tokens; Slack functions should degrade to n
 
 function vscodeTemplate(name: "settings.json" | "tasks.json"): string {
   return readFileSync(join(MODULE_DIR, "..", "templates", "vscode", name), "utf-8");
+}
+
+function randomBlueishTerminalBackground(): string {
+  const index = Math.floor(Math.random() * BLUEISH_TERMINAL_BACKGROUNDS.length);
+  return BLUEISH_TERMINAL_BACKGROUNDS[index] ?? "#5351e6";
+}
+
+function vscodeSettingsTemplate(): string {
+  const settings = JSON.parse(vscodeTemplate("settings.json")) as Record<string, unknown>;
+  const existingCustomizations = settings["workbench.colorCustomizations"];
+  const colorCustomizations =
+    existingCustomizations && typeof existingCustomizations === "object" && !Array.isArray(existingCustomizations)
+      ? (existingCustomizations as Record<string, unknown>)
+      : {};
+  settings["workbench.colorCustomizations"] = {
+    ...colorCustomizations,
+    "terminal.background": randomBlueishTerminalBackground(),
+  };
+  return `${JSON.stringify(settings, null, 2)}\n`;
 }
 
 function defaultConfig(selfHosting: boolean): string {
