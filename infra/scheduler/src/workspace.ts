@@ -27,7 +27,6 @@ export interface Workspace {
 
 export interface WorkspaceConfig {
   layoutVersion: number;
-  defaultProject: string;
   scheduler?: {
     addDefaults?: SchedulerAddDefaults;
   };
@@ -140,7 +139,6 @@ export function parseWorkspaceConfig(content: string): WorkspaceConfig {
   const addDefaults = asRecord(scheduler?.add_defaults);
   return {
     layoutVersion: asNumber(raw.layout_version) ?? LAYOUT_VERSION,
-    defaultProject: asString(raw.default_project) ?? "",
     ...(addDefaults ? {
       scheduler: {
         addDefaults: {
@@ -202,7 +200,7 @@ export function legacyWorkspacePaths(root: string): Workspace {
   };
 }
 
-export async function initWorkspace(root: string, project: string): Promise<string[]> {
+export async function initWorkspace(root: string): Promise<string[]> {
   const workspace = workspacePaths(root);
   await mkdir(workspace.root, { recursive: true });
   if (!isGitRepositoryRoot(workspace.root)) {
@@ -211,13 +209,11 @@ export async function initWorkspace(root: string, project: string): Promise<stri
   const kit = resolveSiblingKit(workspace.root);
   const created: string[] = [];
   const stagePaths: string[] = [];
-  const projectDir = join(workspace.root, "projects", project);
-  const moduleDir = join(workspace.root, "modules", project);
 
   await ensureDir(workspace.stateDir, created, stagePaths, workspace.root);
   await ensureFile(
     workspace.configPath,
-    defaultConfig(project, kit.selfHosting),
+    defaultConfig(kit.selfHosting),
     created,
     stagePaths,
     workspace.root,
@@ -255,55 +251,16 @@ export async function initWorkspace(root: string, project: string): Promise<stri
   await ensureSymlink(join(workspace.root, "docs"), "../a-exp/docs", created, stagePaths, workspace.root, kit.selfHosting);
   await ensureFile(
     join(workspace.root, "AGENTS.md"),
-    defaultAgents(project),
+    defaultAgents(),
     created,
     stagePaths,
     workspace.root,
   );
-  await ensureDir(join(projectDir, "plans"), created, stagePaths, workspace.root);
-  await ensureFile(join(projectDir, "plans", ".gitkeep"), "", created, stagePaths, workspace.root);
-  await ensureDir(join(projectDir, "experiments"), created, stagePaths, workspace.root);
-  await ensureFile(join(projectDir, "experiments", ".gitkeep"), "", created, stagePaths, workspace.root);
-  await ensureFile(
-    join(projectDir, "README.md"),
-    defaultProjectReadme(project),
-    created,
-    stagePaths,
-    workspace.root,
-  );
-  await ensureFile(
-    join(projectDir, "TASKS.md"),
-    defaultTasks(project),
-    created,
-    stagePaths,
-    workspace.root,
-  );
-  await ensureFile(
-    join(projectDir, "budget.yaml"),
-    defaultBudget(),
-    created,
-    stagePaths,
-    workspace.root,
-  );
-  await ensureFile(
-    join(projectDir, "ledger.yaml"),
-    defaultLedger(),
-    created,
-    stagePaths,
-    workspace.root,
-  );
-  await ensureFile(
-    join(moduleDir, "README.md"),
-    defaultModuleReadme(project),
-    created,
-    stagePaths,
-    workspace.root,
-  );
-  await ensureDir(join(moduleDir, "artifacts"), created, stagePaths, workspace.root);
-  await ensureFile(join(moduleDir, "artifacts", ".gitkeep"), "", created, stagePaths, workspace.root);
+  await ensureDir(join(workspace.root, "projects"), created, stagePaths, workspace.root);
+  await ensureFile(join(workspace.root, "projects", ".gitkeep"), "", created, stagePaths, workspace.root);
   await ensureFile(
     join(workspace.root, "modules", "registry.yaml"),
-    defaultRegistry(project),
+    defaultRegistry(),
     created,
     stagePaths,
     workspace.root,
@@ -318,7 +275,7 @@ export async function initWorkspace(root: string, project: string): Promise<stri
     workspace.root,
   );
 
-  commitCreatedWorkspaceFiles(workspace.root, stagePaths, project);
+  commitCreatedWorkspaceFiles(workspace.root, stagePaths);
 
   return created;
 }
@@ -400,7 +357,7 @@ function isGitRepositoryRoot(root: string): boolean {
   return topLevel !== null && resolve(topLevel) === root;
 }
 
-function commitCreatedWorkspaceFiles(root: string, stagePaths: string[], project: string): void {
+function commitCreatedWorkspaceFiles(root: string, stagePaths: string[]): void {
   const uniqueStagePaths = Array.from(new Set(stagePaths));
   if (uniqueStagePaths.length === 0) return;
 
@@ -411,7 +368,7 @@ function commitCreatedWorkspaceFiles(root: string, stagePaths: string[], project
   } catch {
     // Exit code 1 means there are staged changes to commit.
   }
-  gitCommand(root, ["-c", "commit.gpgsign=false", "commit", "-m", `Initialize a-exp workspace for ${project}`]);
+  gitCommand(root, ["-c", "commit.gpgsign=false", "commit", "-m", "Initialize a-exp workspace"]);
 }
 
 function gitCommitEnv(): NodeJS.ProcessEnv {
@@ -424,15 +381,7 @@ function gitCommitEnv(): NodeJS.ProcessEnv {
   };
 }
 
-function titleFromProject(project: string): string {
-  return project
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
-    .join(" ") || project;
-}
-
-function defaultAgents(project: string): string {
+function defaultAgents(): string {
   return `# AGENTS.md
 
 This repo is an a-exp project workspace. It uses the sibling a-exp operating kit through local symlinks:
@@ -450,21 +399,21 @@ The kit commit is recorded in \`.a-exp/kit.lock.yaml\`. If a symlink is broken, 
 - \`AGENTS.md\` is the operating contract for agents in this project repo.
 - \`.agents/skills/\` exposes local a-exp skills from \`../a-exp\`.
 - \`docs/\` exposes schemas and conventions from \`../a-exp\`.
-- \`projects/${project}/README.md\` records mission, context, log, and open questions.
-- \`projects/${project}/TASKS.md\` records bounded next actions.
-- \`projects/${project}/budget.yaml\` declares lightweight resource limits when needed.
-- \`projects/${project}/ledger.yaml\` records declared usage when needed.
-- \`projects/${project}/plans/\` holds non-trivial plans.
-- \`projects/${project}/experiments/<id>/EXPERIMENT.md\` holds experiment records.
+- \`projects/<project>/README.md\` records mission, context, log, and open questions.
+- \`projects/<project>/TASKS.md\` records bounded next actions.
+- \`projects/<project>/budget.yaml\` declares lightweight resource limits when needed.
+- \`projects/<project>/ledger.yaml\` records declared usage when needed.
+- \`projects/<project>/plans/\` holds non-trivial plans.
+- \`projects/<project>/experiments/<id>/EXPERIMENT.md\` holds experiment records.
 - \`modules/registry.yaml\` maps projects to execution modules.
-- \`modules/${project}/\` holds project-owned code and heavy artifacts.
-- \`modules/${project}/artifacts/<experiment-id>/\` holds run outputs.
+- \`modules/<module>/\` holds project-owned code and heavy artifacts.
+- \`modules/<module>/artifacts/<experiment-id>/\` holds run outputs.
 - \`reports/\` holds generated reports.
 - \`APPROVAL_QUEUE.md\` records pending human approvals.
 
 ## Work Cycle
 
-1. Read \`projects/${project}/README.md\` and \`projects/${project}/TASKS.md\`.
+1. Read the relevant \`projects/<project>/README.md\` and \`projects/<project>/TASKS.md\`.
 2. Select an unblocked task with concrete \`Done when\` criteria.
 3. Make the smallest cohesive change that satisfies the task.
 4. Verify with the narrowest useful tests or checks.
@@ -475,11 +424,11 @@ The kit commit is recorded in \`.a-exp/kit.lock.yaml\`. If a symlink is broken, 
 
 - Non-obvious discovery -> record it in the project files in the same turn.
 - Decision -> record it in a project log or plan before relying on it later.
-- Non-trivial plan -> write it under \`projects/${project}/plans/\`.
-- Experiment -> create or update \`projects/${project}/experiments/<id>/EXPERIMENT.md\`.
+- Non-trivial plan -> write it under \`projects/<project>/plans/\`.
+- Experiment -> create or update \`projects/<project>/experiments/<id>/EXPERIMENT.md\`.
 - Verification -> log the exact command and result in the project README.
 - Open question -> add it to the project's \`## Open questions\` section.
-- Heavy outputs -> keep them under \`modules/${project}/artifacts/\`.
+- Heavy outputs -> keep them under \`modules/<module>/artifacts/\`.
 
 ## Tasks
 
@@ -513,7 +462,7 @@ Budget support is lightweight. \`budget.yaml\` declares limits; \`ledger.yaml\` 
 
 ## Experiments
 
-Do not supervise long-running experiments in an agent session. Keep experiment records in \`projects/${project}/experiments/\` and heavy outputs in \`modules/${project}/artifacts/\`.
+Do not supervise long-running experiments in an agent session. Keep experiment records in \`projects/<project>/experiments/\` and heavy outputs in \`modules/<module>/artifacts/\`.
 
 ## Scheduler
 
@@ -531,9 +480,8 @@ function vscodeTemplate(name: "settings.json" | "tasks.json"): string {
   return readFileSync(join(MODULE_DIR, "..", "templates", "vscode", name), "utf-8");
 }
 
-function defaultConfig(project: string, selfHosting: boolean): string {
+function defaultConfig(selfHosting: boolean): string {
   return `layout_version: ${LAYOUT_VERSION}
-default_project: ${project}
 kit:
   mode: ${selfHosting ? "local" : "symlink"}
   source: ${selfHosting ? "." : "../a-exp"}
@@ -556,74 +504,8 @@ self_hosting: ${kit.selfHosting ? "true" : "false"}
 `;
 }
 
-function defaultProjectReadme(project: string): string {
-  return `# ${titleFromProject(project)}
-
-Status: active
-Priority: medium
-Mission: Replace this scaffold with the project mission.
-Done when: A final report answers the project question and links to supporting experiment records and artifacts.
-
-## Context
-
-Use this directory for project memory, plans, bounded task units, experiment records, and lightweight budget records. Put project-owned code and heavy outputs under \`modules/${project}/\`.
-
-## Log
-
-### ${new Date().toISOString().slice(0, 10)} (Initialized a-exp workspace)
-
-Created the initial a-exp project scaffold.
-
-Verification:
-- Pending first project-specific check.
-
-## Open questions
-
-- What concrete question should this project answer?
-`;
-}
-
-function defaultTasks(project: string): string {
-  return `# ${titleFromProject(project)} - Tasks
-
-- [ ] Define the project question
-  Why: The scaffold needs a concrete goal before experiments can be designed.
-  Done when:
-  - \`projects/${project}/README.md\` has a specific mission and done-when condition.
-  - \`projects/${project}/TASKS.md\` has mid-sized follow-up tasks matching that mission.
-  Priority: high
-`;
-}
-
-function defaultBudget(): string {
-  return `# Optional lightweight resource and time budget for this project.
-
-resources: {}
-`;
-}
-
-function defaultLedger(): string {
-  return `# Declared resource usage for this project.
-
-entries: []
-`;
-}
-
-function defaultModuleReadme(project: string): string {
-  return `# ${titleFromProject(project)} Module
-
-Project-owned code and heavy artifacts for \`projects/${project}\` live here.
-
-Use \`artifacts/<experiment-id>/\` for experiment outputs that are too large or noisy for project memory files.
-`;
-}
-
-function defaultRegistry(project: string): string {
-  return `entries:
-  - project: ${project}
-    module: ${project}
-    path: modules/${project}
-    type: local-scratch
+function defaultRegistry(): string {
+  return `entries: []
 `;
 }
 

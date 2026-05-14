@@ -22,7 +22,7 @@ npm install
 npm run build
 cd ../..
 
-./a-exp init --project my-research-project
+./a-exp init
 ./a-exp add
 ./a-exp start
 ```
@@ -38,7 +38,8 @@ Repos/
 
 `a-exp init` symlinks `.agents` and `docs` from the sibling a-exp repo, records
 the kit commit in `.a-exp/kit.lock.yaml`, writes `.vscode/` operator tasks, and
-keeps project memory local.
+creates placeholder `projects/`, `modules/registry.yaml`, and `reports/`
+workspace paths. Create project memory later with `a-exp project`.
 `a-exp` discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
 `--repo <dir>` when a script or daemon should target a specific repo.
 `a-exp init` also writes scheduler defaults so `a-exp add` creates an hourly

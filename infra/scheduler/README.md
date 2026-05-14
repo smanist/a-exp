@@ -5,7 +5,7 @@ Minimal cron scheduler for recurring agent sessions, Slack notifications, status
 ## Commands
 
 ```bash
-./a-exp init --project my-research-project
+./a-exp init
 ./a-exp start
 ./a-exp stop
 ./a-exp add
@@ -35,9 +35,10 @@ Repos/
   project-repo/
 ```
 
-It creates `.agents -> ../a-exp/.agents`, `docs -> ../a-exp/docs`, and
-`.vscode/` operator settings/tasks, then records the sibling kit commit in
-`.a-exp/kit.lock.yaml`.
+It creates `.agents -> ../a-exp/.agents`, `docs -> ../a-exp/docs`,
+`.vscode/` operator settings/tasks, placeholder workspace paths, and
+`modules/registry.yaml`, then records the sibling kit commit in
+`.a-exp/kit.lock.yaml`. Create project memory later with `./a-exp project`.
 
 `init` writes scheduler add defaults in `.a-exp/config.yaml` under
 `scheduler.add_defaults`. By default, `./a-exp add` creates an hourly

@@ -74,7 +74,7 @@ const HELP = `
 a-exp — Cron scheduler for a-exp Core
 
 Commands:
-  init --project <name>     Initialize an a-exp project workspace in this repo
+  init                      Initialize an a-exp workspace in this repo
   project [file]            Run the project skill from a description file, or open a VS Code temp file
   kanban [project]          Run the kanban skill for project summaries
   packet <project> <target> Run the packet skill for an implementation handoff
@@ -91,9 +91,6 @@ Commands:
 
 Global options:
   --repo <dir>              Target workspace repo (default: discover from cwd)
-
-Init options:
-  --project <name>          Default project name to scaffold
 
 Start options:
   --foreground              Run the scheduler in the current terminal
@@ -219,7 +216,7 @@ function extractGlobalOptions(args: string[]): { repo?: string; args: string[] }
 function requireWorkspace(repo?: string): Workspace {
   const workspace = resolveWorkspace({ repo });
   if (!workspace) {
-    fail("No a-exp workspace found. Run `a-exp init --project <name>` first, or pass --repo <dir>.");
+    fail("No a-exp workspace found. Run `a-exp init` first, or pass --repo <dir>.");
   }
   return workspace;
 }
@@ -606,11 +603,9 @@ async function main(): Promise<void> {
 }
 
 async function cmdInit(args: string[], repo?: string): Promise<void> {
-  const opts = parseOptions(args);
-  const project = typeof opts.project === "string" ? opts.project.trim() : "";
-  if (!project) fail("Error: --project required.");
+  if (args.length > 0) fail("Error: init does not accept arguments. Run `a-exp init`, then use `a-exp project` to create projects.");
   const root = repo ? resolve(repo) : process.cwd();
-  const created = await initWorkspace(root, project);
+  const created = await initWorkspace(root);
   console.log(`Initialized a-exp workspace at ${root}`);
   if (created.length === 0) {
     console.log("No files created; existing workspace scaffold was left unchanged.");

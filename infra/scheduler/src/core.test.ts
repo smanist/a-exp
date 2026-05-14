@@ -66,7 +66,7 @@ describe("a-exp core scheduler", () => {
   it("discovers initialized workspaces from nested directories and explicit repo paths", async () => {
     const { parent, repo } = await makeSiblingWorkspace("a-exp-workspace-");
     try {
-      await initWorkspace(repo, "demo");
+      await initWorkspace(repo);
       const nested = join(repo, "modules", "demo", "src");
       await mkdir(nested, { recursive: true });
 
@@ -78,13 +78,13 @@ describe("a-exp core scheduler", () => {
     }
   });
 
-  it("initializes the project scaffold without overwriting existing files", async () => {
+  it("initializes the workspace scaffold without overwriting existing files", async () => {
     const { parent, repo } = await makeSiblingWorkspace("a-exp-init-");
     try {
       const agentsPath = join(repo, "AGENTS.md");
       await writeFile(agentsPath, "custom instructions\n", "utf-8");
 
-      const created = await initWorkspace(repo, "demo");
+      const created = await initWorkspace(repo);
       expect(created).toContain(".a-exp/config.yaml");
       expect(created).toContain(".a-exp/kit.lock.yaml");
       expect(created).toContain(".gitignore");
@@ -93,15 +93,9 @@ describe("a-exp core scheduler", () => {
       expect(created).toContain(".vscode/tasks.json");
       expect(created).toContain(".agents -> ../a-exp/.agents");
       expect(created).toContain("docs -> ../a-exp/docs");
-      expect(created).toContain("projects/demo/README.md");
-      expect(created).toContain("projects/demo/TASKS.md");
-      expect(created).toContain("projects/demo/budget.yaml");
-      expect(created).toContain("projects/demo/ledger.yaml");
-      expect(created).toContain("projects/demo/plans/.gitkeep");
-      expect(created).toContain("projects/demo/experiments/.gitkeep");
+      expect(created).toContain("projects/");
+      expect(created).toContain("projects/.gitkeep");
       expect(created).toContain("modules/registry.yaml");
-      expect(created).toContain("modules/demo/artifacts/");
-      expect(created).toContain("modules/demo/artifacts/.gitkeep");
       expect(created).toContain("reports/");
       expect(created).toContain("reports/.gitkeep");
       expect(created).toContain("APPROVAL_QUEUE.md");
@@ -110,7 +104,7 @@ describe("a-exp core scheduler", () => {
       expect(await readlink(join(repo, "docs"))).toBe("../a-exp/docs");
       const gitRoot = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: repo, encoding: "utf-8" }).trim();
       expect(await realpath(gitRoot)).toBe(await realpath(repo));
-      expect(execFileSync("git", ["log", "-1", "--format=%s"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("Initialize a-exp workspace for demo");
+      expect(execFileSync("git", ["log", "-1", "--format=%s"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("Initialize a-exp workspace");
       expect(execFileSync("git", ["status", "--short"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("?? AGENTS.md");
       await expect(readFile(join(repo, ".vscode", "settings.json"), "utf-8")).resolves.toBe(
         await readFile(join("templates", "vscode", "settings.json"), "utf-8"),
@@ -118,7 +112,10 @@ describe("a-exp core scheduler", () => {
       await expect(readFile(join(repo, ".vscode", "tasks.json"), "utf-8")).resolves.toBe(
         await readFile(join("templates", "vscode", "tasks.json"), "utf-8"),
       );
-      const config = parseWorkspaceConfig(await readFile(join(repo, ".a-exp", "config.yaml"), "utf-8"));
+      const configText = await readFile(join(repo, ".a-exp", "config.yaml"), "utf-8");
+      expect(configText).not.toContain("default_project");
+      expect(await readFile(join(repo, "modules", "registry.yaml"), "utf-8")).toBe("entries: []\n");
+      const config = parseWorkspaceConfig(configText);
       expect(config.scheduler?.addDefaults).toMatchObject({
         name: "work-cycle",
         cron: "0 * * * *",
@@ -392,7 +389,7 @@ Done when: Reports stay readable.
   it("requires non-self-hosting workspaces to be parallel to an a-exp kit", async () => {
     const dir = await mkdtemp(join(tmpdir(), "a-exp-no-kit-"));
     try {
-      await expect(initWorkspace(dir, "demo")).rejects.toThrow(/a-exp kit not found/);
+      await expect(initWorkspace(dir)).rejects.toThrow(/a-exp kit not found/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -401,7 +398,7 @@ Done when: Reports stay readable.
   it("keeps jobs and operator preferences under workspace .a-exp", async () => {
     const { parent, repo } = await makeSiblingWorkspace("a-exp-state-");
     try {
-      await initWorkspace(repo, "demo");
+      await initWorkspace(repo);
       const paths = workspacePaths(repo);
 
       const store = new JobStore(paths.jobsPath);
@@ -432,7 +429,7 @@ Done when: Reports stay readable.
   it("reports daemon state from the workspace lockfile", async () => {
     const { parent, repo } = await makeSiblingWorkspace("a-exp-daemon-");
     try {
-      await initWorkspace(repo, "demo");
+      await initWorkspace(repo);
       const paths = workspacePaths(repo);
       const lockfile = join(paths.lockDir, "scheduler.pid");
       expect(getDaemonStateFromLockfile(lockfile)).toBe("stopped");
@@ -450,7 +447,7 @@ Done when: Reports stay readable.
   it("removes stale scheduler lockfiles on stop", async () => {
     const { parent, repo } = await makeSiblingWorkspace("a-exp-stale-stop-");
     try {
-      await initWorkspace(repo, "demo");
+      await initWorkspace(repo);
       const paths = workspacePaths(repo);
       const lockfile = join(paths.lockDir, "scheduler.pid");
       await writeFile(lockfile, "999999999\n", "utf-8");

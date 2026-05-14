@@ -3,11 +3,11 @@
 a-exp does not hide its operating model behind a large service API. The files in
 an initialized project repo are the interface.
 
-Run `a-exp init --project <name>` in a repo parallel to `a-exp/` to create the
-workspace anchor `.a-exp/config.yaml`, symlink `.agents` and `docs` from
-`../a-exp`, and create the standard `projects/<name>/` and `modules/<name>/`
-layout. Subsequent commands discover that repo from the current directory, or
-use `--repo <dir>` when a script should target a specific workspace.
+Run `a-exp init` in a repo parallel to `a-exp/` to create the workspace anchor
+`.a-exp/config.yaml`, symlink `.agents` and `docs` from `../a-exp`, and create
+placeholder `projects/`, `modules/registry.yaml`, and `reports/` paths.
+Subsequent commands discover that repo from the current directory, or use
+`--repo <dir>` when a script should target a specific workspace.
 
 An agent should be able to:
 

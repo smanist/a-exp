@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   const opts = parseArgs();
   const workspace = resolveWorkspace({ repo: opts.repo });
   if (!workspace) {
-    console.error("No a-exp workspace found. Run `a-exp init --project <name>` first, or pass --repo <dir>.");
+    console.error("No a-exp workspace found. Run `a-exp init` first, or pass --repo <dir>.");
     process.exit(1);
   }
   const repoDir = workspace.root;

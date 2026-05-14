@@ -22,6 +22,31 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Made init workspace-only)
+
+Changed `a-exp init` to initialize only the workspace shell. It no longer
+accepts `--project`, no longer writes `default_project`, and creates only the
+top-level placeholders `projects/.gitkeep`, `modules/registry.yaml`, and
+`reports/.gitkeep`; project memory is created later through `a-exp project`.
+Generated workspace `AGENTS.md` text now uses generic `projects/<project>` and
+`modules/<module>` wording.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+- `cd infra/scheduler && node dist/cli.js init --project demo`: failed as expected with `Error: init does not accept arguments. Run \`a-exp init\`, then use \`a-exp project\` to create projects.`
+
+Files:
+- `.a-exp/config.yaml`
+- `README.md`
+- `docs/repo-as-interface.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/report/run-report.ts`
+- `infra/scheduler/src/workspace.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Added VS Code templates to init)
 
 Changed `a-exp init` to create `.vscode/settings.json` and
