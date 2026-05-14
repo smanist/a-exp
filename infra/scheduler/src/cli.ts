@@ -100,6 +100,8 @@ Project options:
   --dry-run                 Print the project-skill prompt without running it
 
 Kanban options:
+  --quick                  Run the deterministic kanban generator directly, without an agent session
+  --deterministic          Alias for --quick
   --output-dir <dir>        Output directory for generated summaries
   --max-cost-items <n>      Limit cost/session items per summary
   --max-result-bullets <n>  Limit result bullets per card
@@ -360,6 +362,7 @@ export interface KanbanOptions {
   outputDir?: string;
   maxCostItems?: string;
   maxResultBullets?: string;
+  dryRun?: boolean;
 }
 
 export function buildKanbanSkillPrompt(opts: KanbanOptions): string {
@@ -378,6 +381,17 @@ export function buildKanbanSkillPrompt(opts: KanbanOptions): string {
     "Follow the kanban skill workflow: read project TASKS, logs, experiment records, reports, and matching packet files; generate the requested Markdown summaries; inspect the output; tighten wording if needed; verify; update the relevant project log; and commit the completed logical unit.",
     "Keep paths relative to the repo root and do not invent cost attribution.",
   ].join("\n");
+}
+
+export function buildDeterministicKanbanArgs(workspaceRoot: string, opts: KanbanOptions): string[] {
+  const scriptPath = join(workspaceRoot, ".agents", "skills", "kanban", "scripts", "generate_kanban.py");
+  const args = [scriptPath, "--repo-root", workspaceRoot];
+  if (opts.project) args.push(opts.project);
+  if (opts.outputDir) args.push("--output-dir", opts.outputDir);
+  if (opts.maxCostItems) args.push("--max-cost-items", opts.maxCostItems);
+  if (opts.maxResultBullets) args.push("--max-result-bullets", opts.maxResultBullets);
+  if (opts.dryRun) args.push("--dry-run");
+  return args;
 }
 
 export interface PacketOptions {
@@ -549,14 +563,22 @@ async function cmdProject(args: string[], repo?: string): Promise<void> {
 async function cmdKanban(args: string[], repo?: string): Promise<void> {
   const workspace = requireWorkspace(repo);
   configureWorkspaceRuntime(workspace);
-  const opts = parseOptions(args, new Set(["dry-run"]));
-  const project = positionalArgs(args, new Set(["dry-run"]))[0];
-  const message = buildKanbanSkillPrompt({
+  const booleanOptions = new Set(["dry-run", "quick", "deterministic"]);
+  const opts = parseOptions(args, booleanOptions);
+  const project = positionalArgs(args, booleanOptions)[0];
+  const kanbanOpts = {
     project,
     outputDir: typeof opts["output-dir"] === "string" ? opts["output-dir"] : undefined,
     maxCostItems: typeof opts["max-cost-items"] === "string" ? opts["max-cost-items"] : undefined,
     maxResultBullets: typeof opts["max-result-bullets"] === "string" ? opts["max-result-bullets"] : undefined,
-  });
+    dryRun: opts["dry-run"] === true,
+  };
+  if (opts.quick === true || opts.deterministic === true) {
+    await runDeterministicKanban(workspace, kanbanOpts);
+    return;
+  }
+
+  const message = buildKanbanSkillPrompt(kanbanOpts);
   if (opts["dry-run"] === true) {
     console.log(message);
     return;
@@ -568,6 +590,38 @@ async function cmdKanban(args: string[], repo?: string): Promise<void> {
     message,
     model: typeof opts.model === "string" ? opts.model : undefined,
     maxDurationMs: typeof opts["max-duration-ms"] === "string" ? opts["max-duration-ms"] : undefined,
+  });
+}
+
+async function runDeterministicKanban(workspace: Workspace, opts: KanbanOptions): Promise<void> {
+  const args = buildDeterministicKanbanArgs(workspace.root, opts);
+  const scriptPath = args[0];
+  if (!existsSync(scriptPath)) {
+    fail(`Kanban generator not found: ${scriptPath}`);
+  }
+
+  const python = process.env.PYTHON ?? "python3";
+  const child = spawn(python, args, {
+    cwd: workspace.root,
+    stdio: "inherit",
+    env: process.env,
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    child.once("error", (err) => {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        reject(new Error(`Python command not found: ${python}. Set PYTHON to a Python 3 executable.`));
+        return;
+      }
+      reject(err);
+    });
+    child.once("exit", (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(signal ? `${python} exited from signal ${signal}` : `${python} exited with code ${code}`));
+    });
   });
 }
 

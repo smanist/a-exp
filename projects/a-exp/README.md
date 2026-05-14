@@ -22,6 +22,28 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-13 (Added deterministic kanban quick mode)
+
+Added `a-exp kanban --quick` as a direct deterministic path to the kanban
+helper script, bypassing the agent-backed kanban skill job. The quick mode
+supports the existing kanban options, `--dry-run`, and an optional project
+filter. The generator script now accepts a positional project name so scoped
+quick runs only emit the requested `<project>.md`.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 21 tests.
+- `python .agents/skills/kanban/scripts/generate_kanban.py a-exp --repo-root . --dry-run --max-cost-items 1 --max-result-bullets 1`: passed, printed only `a-exp.md`.
+- `./a-exp kanban --quick a-exp --dry-run --max-cost-items 1 --max-result-bullets 1`: passed, printed only `a-exp.md`.
+
+Files:
+- `.agents/skills/kanban/SKILL.md`
+- `.agents/skills/kanban/scripts/generate_kanban.py`
+- `README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-13 (Made project input interactive by default)
 
 Changed `a-exp project` so the description file argument is optional. When no

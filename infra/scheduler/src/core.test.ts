@@ -7,6 +7,7 @@ import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExe
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
 import {
   PROJECT_DESCRIPTION_TEMPLATE,
+  buildDeterministicKanbanArgs,
   buildKanbanSkillPrompt,
   buildPacketSkillPrompt,
   buildProjectSkillPrompt,
@@ -193,6 +194,28 @@ Done when: Reports stay readable.
     expect(prompt).toContain("Output directory: reports/kanban");
     expect(prompt).toContain("Max cost items: 2");
     expect(prompt).toContain("Max result bullets: 3");
+  });
+
+  it("builds deterministic kanban generator arguments", () => {
+    expect(buildDeterministicKanbanArgs("/repo", {
+      project: "a-exp",
+      outputDir: "reports/kanban",
+      maxCostItems: "2",
+      maxResultBullets: "3",
+      dryRun: true,
+    })).toEqual([
+      "/repo/.agents/skills/kanban/scripts/generate_kanban.py",
+      "--repo-root",
+      "/repo",
+      "a-exp",
+      "--output-dir",
+      "reports/kanban",
+      "--max-cost-items",
+      "2",
+      "--max-result-bullets",
+      "3",
+      "--dry-run",
+    ]);
   });
 
   it("builds a packet skill prompt from CLI arguments", () => {

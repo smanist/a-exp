@@ -333,6 +333,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate compressed Markdown summaries for a-exp project kanban review."
     )
+    parser.add_argument("project", nargs="?", help="Optional project name to generate")
     parser.add_argument("--repo-root", default=".", help="Repository root, default: current directory")
     parser.add_argument(
         "--output-dir",
@@ -353,8 +354,14 @@ def main() -> int:
     if not output_dir.is_absolute():
         output_dir = repo_root / output_dir
 
+    project_dirs = sorted(path for path in projects_root.iterdir() if path.is_dir())
+    if args.project:
+        project_dirs = [path for path in project_dirs if path.name == args.project]
+        if not project_dirs:
+            raise SystemExit(f"Project not found: {args.project}")
+
     summaries = {}
-    for project_dir in sorted(path for path in projects_root.iterdir() if path.is_dir()):
+    for project_dir in project_dirs:
         summaries[project_dir.name] = generate_project(repo_root, project_dir, args)
 
     if args.dry_run:

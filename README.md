@@ -105,6 +105,7 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ./a-exp stop
 ./a-exp project [description-file]
 ./a-exp kanban [project] --output-dir reports/kanban
+./a-exp kanban --quick [project]
 ./a-exp packet <project> <target-package> [instructions...]
 ./a-exp add --name work-cycle --cron "0 * * * *" --message-default
 ./a-exp list
@@ -121,6 +122,9 @@ developing or when you want startup and runtime logs in the current terminal.
 `./a-exp project` opens a temporary project description file in VS Code and runs
 the project skill after the editor closes. Pass `./a-exp project <file>` to use
 an existing description file.
+
+`./a-exp kanban --quick` runs the deterministic kanban generator directly,
+without launching an agent session.
 
 Global workspace override:
 

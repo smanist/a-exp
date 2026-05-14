@@ -65,6 +65,7 @@ The script counts tasks, parses `.a-exp/logs`, extracts finding bullets from exp
 
 Useful options:
 
+- Positional `project`: generate only that project.
 - `--dry-run`: print summaries instead of writing files.
 - `--max-cost-items N`: limit how many log/session cost entries appear in the cost card.
 - `--max-result-bullets N`: limit finding bullets per experiment or report card.
