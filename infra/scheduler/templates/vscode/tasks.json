@@ -17,7 +17,7 @@
     {
       "label": "Kanban (a-exp)",
       "type": "shell",
-      "command": "a-exp kanban --quick && code --reuse-window reports/kanban/*.md",
+      "command": "a-exp kanban --quick && code --reuse-window reports/kanban/_quick.md",
       "options": {
         "cwd": "${workspaceFolder}"
       },
