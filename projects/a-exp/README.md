@@ -22,6 +22,28 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Added scheduler add defaults)
+
+Added workspace-level scheduler defaults under `.a-exp/config.yaml`
+`scheduler.add_defaults`, and changed `a-exp add` to use those defaults for
+name, schedule, prompt, model, cwd, and max duration when explicit CLI flags are
+omitted. `a-exp init` now writes the defaults for new workspaces, so a plain
+`a-exp add` creates the default hourly work-cycle job. Explicit add flags still
+override config values.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 22 tests.
+
+Files:
+- `.a-exp/config.yaml`
+- `README.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/cli.ts`
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/workspace.ts`
+- `projects/a-exp/README.md`
+
 ### 2026-05-13 (Made quick kanban output a single file)
 
 Changed deterministic quick kanban output so `a-exp kanban --quick` writes one

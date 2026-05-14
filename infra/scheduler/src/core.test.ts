@@ -7,6 +7,7 @@ import { consumeCodexExecJsonMessage, createCodexExecJsonState, finalizeCodexExe
 import { setChannelMode, setChannelModesPath } from "./channel-mode.js";
 import {
   PROJECT_DESCRIPTION_TEMPLATE,
+  buildSchedulerAddInput,
   buildDeterministicKanbanArgs,
   buildKanbanSkillPrompt,
   buildPacketSkillPrompt,
@@ -22,7 +23,7 @@ import { setLegacyBackendPreferencePath, setModelPreference, setModelPreferenceP
 import { parseProjectReadme } from "./report/data-projects.js";
 import { computeNextRunAtMs } from "./schedule.js";
 import { JobStore } from "./store.js";
-import { findWorkspaceRoot, initWorkspace, resolveWorkspace, workspacePaths } from "./workspace.js";
+import { findWorkspaceRoot, initWorkspace, parseWorkspaceConfig, resolveWorkspace, workspacePaths } from "./workspace.js";
 
 async function makeSiblingWorkspace(prefix: string): Promise<{ parent: string; repo: string }> {
   const parent = await mkdtemp(join(tmpdir(), prefix));
@@ -101,9 +102,42 @@ describe("a-exp core scheduler", () => {
       expect(await readFile(agentsPath, "utf-8")).toBe("custom instructions\n");
       expect(await readlink(join(repo, ".agents"))).toBe("../a-exp/.agents");
       expect(await readlink(join(repo, "docs"))).toBe("../a-exp/docs");
+      const config = parseWorkspaceConfig(await readFile(join(repo, ".a-exp", "config.yaml"), "utf-8"));
+      expect(config.scheduler?.addDefaults).toMatchObject({
+        name: "work-cycle",
+        cron: "0 * * * *",
+        messageDefault: true,
+        model: "strong",
+        cwd: ".",
+        maxDurationMs: 1_800_000,
+      });
     } finally {
       await rm(parent, { recursive: true, force: true });
     }
+  });
+
+  it("builds add jobs from workspace scheduler defaults with CLI overrides", () => {
+    const workspace = workspacePaths("/repo");
+    const input = buildSchedulerAddInput(
+      { model: "frontier", every: "60000" },
+      workspace,
+      {
+        name: "work-cycle",
+        cron: "0 * * * *",
+        messageDefault: true,
+        model: "strong",
+        cwd: ".",
+        maxDurationMs: 1_800_000,
+      },
+    );
+
+    expect(input.name).toBe("work-cycle");
+    expect(input.schedule.kind).toBe("every");
+    expect(input.schedule.kind === "every" ? input.schedule.everyMs : null).toBe(60_000);
+    expect(input.payload.model).toBe("frontier");
+    expect(input.payload.cwd).toBe("/repo");
+    expect(input.payload.maxDurationMs).toBe(1_800_000);
+    expect(input.payload.message).toContain("Run one a-exp work cycle.");
   });
 
   it("parses report tasks without treating multi-bullet Done when criteria as tasks", () => {

@@ -60,8 +60,15 @@ import {
   getDaemonStateFromLockfile,
   isPidAlive,
 } from "./instance-guard.js";
-import { initWorkspace, legacyWorkspacePaths, resolveWorkspace, type Workspace } from "./workspace.js";
-import type { Job, JobCreate, Schedule } from "./types.js";
+import {
+  initWorkspace,
+  legacyWorkspacePaths,
+  readWorkspaceConfig,
+  resolveWorkspace,
+  type SchedulerAddDefaults,
+  type Workspace,
+} from "./workspace.js";
+import type { Job, JobCreate, JobPayload, Schedule } from "./types.js";
 
 const HELP = `
 a-exp — Cron scheduler for a-exp Core
@@ -124,6 +131,7 @@ Add options:
   --message-project <name>  Use the project-scoped work-cycle prompt
   --model <model>           Model name
   --cwd <dir>               Working directory
+  --max-duration-ms <ms>    Override max session duration
 
 Run options:
   --message <msg>           Override prompt for this run
@@ -249,6 +257,70 @@ function projectWorkCyclePrompt(project: string): string {
     `Run one a-exp work cycle scoped to projects/${project}.`,
     "Read the project README and TASKS, select one actionable task, execute it, update project memory, verify, and commit the completed logical unit.",
   ].join("\n");
+}
+
+function optionString(opts: Record<string, string | true>, key: string): string | undefined {
+  return typeof opts[key] === "string" ? opts[key] : undefined;
+}
+
+function optionFlag(opts: Record<string, string | true>, key: string): boolean {
+  return opts[key] === true;
+}
+
+function positiveNumber(value: string | number | undefined, label: string): number | undefined {
+  if (value === undefined) return undefined;
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Error: ${label} must be a positive number.`);
+  }
+  return parsed;
+}
+
+export function buildSchedulerAddInput(
+  opts: Record<string, string | true>,
+  workspace: Workspace,
+  defaults: SchedulerAddDefaults = {},
+): JobCreate {
+  const name = optionString(opts, "name") ?? defaults.name ?? "";
+  if (!name) throw new Error("Error: --name required.");
+
+  const cliCron = optionString(opts, "cron");
+  const cliEvery = optionString(opts, "every");
+  const cliTz = optionString(opts, "tz");
+  let schedule: Schedule;
+  if (cliCron !== undefined) {
+    schedule = { kind: "cron", expr: cliCron, ...((cliTz ?? defaults.tz) ? { tz: cliTz ?? defaults.tz } : {}) };
+  } else if (cliEvery !== undefined) {
+    schedule = { kind: "every", everyMs: positiveNumber(cliEvery, "--every")!, anchorMs: Date.now() };
+  } else if (defaults.cron) {
+    schedule = { kind: "cron", expr: defaults.cron, ...((cliTz ?? defaults.tz) ? { tz: cliTz ?? defaults.tz } : {}) };
+  } else if (defaults.everyMs !== undefined) {
+    schedule = { kind: "every", everyMs: positiveNumber(defaults.everyMs, "scheduler.add_defaults.every_ms")!, anchorMs: Date.now() };
+  } else {
+    throw new Error("Error: --cron or --every required.");
+  }
+
+  let message: string;
+  if (optionFlag(opts, "message-default")) message = defaultWorkCyclePrompt();
+  else if (optionString(opts, "message-project")) message = projectWorkCyclePrompt(optionString(opts, "message-project")!);
+  else if (optionString(opts, "message")) message = optionString(opts, "message")!;
+  else if (defaults.messageDefault) message = defaultWorkCyclePrompt();
+  else if (defaults.messageProject) message = projectWorkCyclePrompt(defaults.messageProject);
+  else if (defaults.message) message = defaults.message;
+  else throw new Error("Error: provide --message, --message-default, or --message-project.");
+
+  const cliCwd = optionString(opts, "cwd");
+  const defaultCwd = defaults.cwd;
+  const model = optionString(opts, "model") ?? defaults.model;
+  const maxDurationMs = optionString(opts, "max-duration-ms") ?? defaults.maxDurationMs;
+  const payload: JobPayload = {
+    message,
+    ...(model ? { model } : {}),
+    cwd: cliCwd ? resolve(cliCwd) : (defaultCwd ? resolve(workspace.root, defaultCwd) : workspace.root),
+    ...(maxDurationMs !== undefined ? { maxDurationMs: positiveNumber(maxDurationMs, "--max-duration-ms") } : {}),
+  };
+
+  return { name, schedule, payload };
 }
 
 export interface ProjectDescription {
@@ -781,30 +853,16 @@ async function cmdAdd(args: string[], repo?: string): Promise<void> {
   const workspace = requireWorkspace(repo);
   configureWorkspaceRuntime(workspace);
   const opts = parseOptions(args);
-  const name = String(opts.name ?? "");
-  if (!name) fail("Error: --name required.");
-
-  let schedule: Schedule;
-  if (typeof opts.cron === "string") {
-    schedule = { kind: "cron", expr: opts.cron, ...(typeof opts.tz === "string" ? { tz: opts.tz } : {}) };
-  } else if (typeof opts.every === "string") {
-    schedule = { kind: "every", everyMs: Number(opts.every), anchorMs: Date.now() };
-  } else {
-    fail("Error: --cron or --every required.");
+  let input: JobCreate;
+  try {
+    input = buildSchedulerAddInput(
+      opts,
+      workspace,
+      readWorkspaceConfig(workspace.configPath).scheduler?.addDefaults ?? {},
+    );
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
   }
-
-  let message: string;
-  if (opts["message-default"] === true) message = defaultWorkCyclePrompt();
-  else if (typeof opts["message-project"] === "string") message = projectWorkCyclePrompt(opts["message-project"]);
-  else if (typeof opts.message === "string") message = opts.message;
-  else fail("Error: provide --message, --message-default, or --message-project.");
-
-  const payload = {
-    message,
-    ...(typeof opts.model === "string" ? { model: opts.model } : {}),
-    cwd: typeof opts.cwd === "string" ? resolve(opts.cwd) : workspace.root,
-  };
-  const input: JobCreate = { name, schedule, payload };
   const store = storeFor(workspace);
   const job = await store.add(input);
   console.log(`Added job ${job.name} (${job.id})`);

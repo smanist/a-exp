@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { basename, dirname, join, parse, resolve } from "node:path";
@@ -26,6 +26,22 @@ export interface Workspace {
 export interface WorkspaceConfig {
   layoutVersion: number;
   defaultProject: string;
+  scheduler?: {
+    addDefaults?: SchedulerAddDefaults;
+  };
+}
+
+export interface SchedulerAddDefaults {
+  name?: string;
+  cron?: string;
+  everyMs?: number;
+  tz?: string;
+  message?: string;
+  messageDefault?: boolean;
+  messageProject?: string;
+  model?: string;
+  cwd?: string;
+  maxDurationMs?: number;
 }
 
 export function workspacePaths(root: string): Workspace {
@@ -50,6 +66,100 @@ export function workspacePaths(root: string): Workspace {
 
 export function hasWorkspaceConfig(dir: string): boolean {
   return existsSync(join(dir, CONFIG_PATH));
+}
+
+function parseScalar(value: string): string | number | boolean {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (/^-?\d+$/.test(trimmed)) return Number(trimmed);
+  return trimmed;
+}
+
+function parseSimpleYaml(content: string): Record<string, unknown> {
+  const root: Record<string, unknown> = {};
+  const stack: Array<{ indent: number; value: Record<string, unknown> }> = [
+    { indent: -1, value: root },
+  ];
+
+  for (const rawLine of content.split("\n")) {
+    if (!rawLine.trim() || rawLine.trimStart().startsWith("#")) continue;
+    const indent = rawLine.match(/^ */)?.[0].length ?? 0;
+    const trimmed = rawLine.trim();
+    const colon = trimmed.indexOf(":");
+    if (colon === -1) continue;
+
+    const key = trimmed.slice(0, colon).trim();
+    const rawValue = trimmed.slice(colon + 1).trim();
+    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) {
+      stack.pop();
+    }
+    const parent = stack[stack.length - 1].value;
+
+    if (!rawValue) {
+      const child: Record<string, unknown> = {};
+      parent[key] = child;
+      stack.push({ indent, value: child });
+    } else {
+      parent[key] = parseScalar(rawValue);
+    }
+  }
+
+  return root;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+export function parseWorkspaceConfig(content: string): WorkspaceConfig {
+  const raw = parseSimpleYaml(content);
+  const scheduler = asRecord(raw.scheduler);
+  const addDefaults = asRecord(scheduler?.add_defaults);
+  return {
+    layoutVersion: asNumber(raw.layout_version) ?? LAYOUT_VERSION,
+    defaultProject: asString(raw.default_project) ?? "",
+    ...(addDefaults ? {
+      scheduler: {
+        addDefaults: {
+          name: asString(addDefaults.name),
+          cron: asString(addDefaults.cron),
+          everyMs: asNumber(addDefaults.every_ms),
+          tz: asString(addDefaults.tz),
+          message: asString(addDefaults.message),
+          messageDefault: asBoolean(addDefaults.message_default),
+          messageProject: asString(addDefaults.message_project),
+          model: asString(addDefaults.model),
+          cwd: asString(addDefaults.cwd),
+          maxDurationMs: asNumber(addDefaults.max_duration_ms),
+        },
+      },
+    } : {}),
+  };
+}
+
+export function readWorkspaceConfig(configPath: string): WorkspaceConfig {
+  return parseWorkspaceConfig(readFileSync(configPath, "utf-8"));
 }
 
 export function findWorkspaceRoot(startDir = process.cwd()): string | null {
@@ -343,6 +453,14 @@ default_project: ${project}
 kit:
   mode: ${selfHosting ? "local" : "symlink"}
   source: ${selfHosting ? "." : "../a-exp"}
+scheduler:
+  add_defaults:
+    name: work-cycle
+    cron: "0 * * * *"
+    message_default: true
+    model: strong
+    cwd: "."
+    max_duration_ms: 1800000
 `;
 }
 

@@ -8,7 +8,7 @@ Minimal cron scheduler for recurring agent sessions, Slack notifications, status
 ./a-exp init --project my-research-project
 ./a-exp start
 ./a-exp stop
-./a-exp add --name work-cycle --cron "0 * * * *" --message-default --model gpt-5.2
+./a-exp add
 ./a-exp list
 ./a-exp run <job-id>
 ./a-exp enable <job-id>
@@ -36,6 +36,11 @@ Repos/
 
 It creates `.agents -> ../a-exp/.agents` and `docs -> ../a-exp/docs`, then
 records the sibling kit commit in `.a-exp/kit.lock.yaml`.
+
+`init` writes scheduler add defaults in `.a-exp/config.yaml` under
+`scheduler.add_defaults`. By default, `./a-exp add` creates an hourly
+`work-cycle` job with the default work-cycle prompt and the `strong` model tier;
+explicit add flags override the config values.
 
 ## Build
 

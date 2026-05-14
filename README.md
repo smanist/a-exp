@@ -23,7 +23,7 @@ npm run build
 cd ../..
 
 ./a-exp init --project my-research-project
-./a-exp add --name "work-cycle" --cron "0 * * * *" --message-default --model gpt-5.2
+./a-exp add
 ./a-exp start
 ```
 
@@ -40,6 +40,8 @@ Repos/
 the kit commit in `.a-exp/kit.lock.yaml`, and keeps project memory local.
 `a-exp` discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
 `--repo <dir>` when a script or daemon should target a specific repo.
+`a-exp init` also writes scheduler defaults so `a-exp add` creates an hourly
+work-cycle job unless flags override the defaults.
 
 Slack is optional. Configure these variables to enable it:
 
@@ -107,7 +109,7 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 ./a-exp kanban [project] --output-dir reports/kanban
 ./a-exp kanban --quick [project]
 ./a-exp packet <project> <target-package> [instructions...]
-./a-exp add --name work-cycle --cron "0 * * * *" --message-default
+./a-exp add
 ./a-exp list
 ./a-exp run <job-id>
 ./a-exp status
@@ -118,6 +120,10 @@ The `./a-exp` wrapper points at the scheduler CLI. Retained commands are:
 `./a-exp start` launches the scheduler as a background daemon and writes daemon
 output to `.a-exp/logs/daemon.log`. Use `./a-exp start --foreground` when
 developing or when you want startup and runtime logs in the current terminal.
+
+`./a-exp add` reads default options from `.a-exp/config.yaml` under
+`scheduler.add_defaults`. Explicit flags such as `--cron`, `--every`, `--model`,
+`--message`, and `--max-duration-ms` override those defaults.
 
 `./a-exp project` opens a temporary project description file in VS Code and runs
 the project skill after the editor closes. Pass `./a-exp project <file>` to use
