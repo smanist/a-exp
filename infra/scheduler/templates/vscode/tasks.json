@@ -81,8 +81,8 @@
       "description": "Select daemon command",
       "options": [
         "start",
-        "start --foreground",
-        "stop"
+        "stop",
+        "start --foreground"
       ],
       "default": "status"
     }
