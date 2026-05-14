@@ -35,8 +35,9 @@ Repos/
   project-repo/
 ```
 
-It creates `.agents -> ../a-exp/.agents` and `docs -> ../a-exp/docs`, then
-records the sibling kit commit in `.a-exp/kit.lock.yaml`.
+It creates `.agents -> ../a-exp/.agents`, `docs -> ../a-exp/docs`, and
+`.vscode/` operator settings/tasks, then records the sibling kit commit in
+`.a-exp/kit.lock.yaml`.
 
 `init` writes scheduler add defaults in `.a-exp/config.yaml` under
 `scheduler.add_defaults`. By default, `./a-exp add` creates an hourly

@@ -1,0 +1,92 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Status (a-exp)",
+      "type": "shell",
+      "command": "a-exp status",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "group": "a-exp"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Kanban (a-exp)",
+      "type": "shell",
+      "command": "a-exp kanban --quick && code --reuse-window reports/kanban/*.md",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "group": "a-exp"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start a-exp",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "Status (a-exp)",
+        "Kanban (a-exp)"
+      ],
+      "problemMatcher": [],
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "Project (a-exp)",
+      "type": "shell",
+      "command": "a-exp project",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Daemon (a-exp)",
+      "type": "shell",
+      "command": "a-exp ${input:aExpMode}",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+      },
+      "runOptions": {
+        "reevaluateOnRerun": true
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "aExpMode",
+      "type": "pickString",
+      "description": "Select daemon command",
+      "options": [
+        "start",
+        "start --foreground",
+        "stop"
+      ],
+      "default": "status"
+    }
+  ]
+}

@@ -88,6 +88,9 @@ describe("a-exp core scheduler", () => {
       expect(created).toContain(".a-exp/config.yaml");
       expect(created).toContain(".a-exp/kit.lock.yaml");
       expect(created).toContain(".gitignore");
+      expect(created).toContain(".vscode/");
+      expect(created).toContain(".vscode/settings.json");
+      expect(created).toContain(".vscode/tasks.json");
       expect(created).toContain(".agents -> ../a-exp/.agents");
       expect(created).toContain("docs -> ../a-exp/docs");
       expect(created).toContain("projects/demo/README.md");
@@ -109,6 +112,12 @@ describe("a-exp core scheduler", () => {
       expect(await realpath(gitRoot)).toBe(await realpath(repo));
       expect(execFileSync("git", ["log", "-1", "--format=%s"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("Initialize a-exp workspace for demo");
       expect(execFileSync("git", ["status", "--short"], { cwd: repo, encoding: "utf-8" }).trim()).toBe("?? AGENTS.md");
+      await expect(readFile(join(repo, ".vscode", "settings.json"), "utf-8")).resolves.toBe(
+        await readFile(join("templates", "vscode", "settings.json"), "utf-8"),
+      );
+      await expect(readFile(join(repo, ".vscode", "tasks.json"), "utf-8")).resolves.toBe(
+        await readFile(join("templates", "vscode", "tasks.json"), "utf-8"),
+      );
       const config = parseWorkspaceConfig(await readFile(join(repo, ".a-exp", "config.yaml"), "utf-8"));
       expect(config.scheduler?.addDefaults).toMatchObject({
         name: "work-cycle",

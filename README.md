@@ -37,7 +37,8 @@ Repos/
 ```
 
 `a-exp init` symlinks `.agents` and `docs` from the sibling a-exp repo, records
-the kit commit in `.a-exp/kit.lock.yaml`, and keeps project memory local.
+the kit commit in `.a-exp/kit.lock.yaml`, writes `.vscode/` operator tasks, and
+keeps project memory local.
 `a-exp` discovers the workspace by walking upward for `.a-exp/config.yaml`; pass
 `--repo <dir>` when a script or daemon should target a specific repo.
 `a-exp init` also writes scheduler defaults so `a-exp add` creates an hourly
@@ -58,6 +59,7 @@ SLACK_USER_ID=...
 | `AGENTS.md` | Operating contract for agents in this repo |
 | `.a-exp/config.yaml` | Workspace anchor and layout metadata |
 | `.a-exp/kit.lock.yaml` | Sibling kit source and commit recorded at init time |
+| `.vscode/` | VS Code settings and tasks copied from scheduler templates |
 | `.agents/skills/` | Agent skills, symlinked from `../a-exp` in local project repos |
 | `infra/scheduler/` | Cron scheduler, session launch, Slack, status, reports |
 | `infra/experiment-runner/` | Fire-and-forget experiment execution with artifacts |

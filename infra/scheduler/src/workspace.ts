@@ -2,11 +2,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { basename, dirname, join, parse, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const WORKSPACE_DIR = ".a-exp";
 export const LEGACY_STATE_DIR = ".scheduler";
 export const CONFIG_PATH = join(WORKSPACE_DIR, "config.yaml");
 export const LAYOUT_VERSION = 1;
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 
 export interface Workspace {
   root: string;
@@ -234,6 +236,21 @@ export async function initWorkspace(root: string, project: string): Promise<stri
     stagePaths,
     workspace.root,
   );
+  await ensureDir(join(workspace.root, ".vscode"), created, stagePaths, workspace.root);
+  await ensureFile(
+    join(workspace.root, ".vscode", "settings.json"),
+    vscodeTemplate("settings.json"),
+    created,
+    stagePaths,
+    workspace.root,
+  );
+  await ensureFile(
+    join(workspace.root, ".vscode", "tasks.json"),
+    vscodeTemplate("tasks.json"),
+    created,
+    stagePaths,
+    workspace.root,
+  );
   await ensureSymlink(join(workspace.root, ".agents"), "../a-exp/.agents", created, stagePaths, workspace.root, kit.selfHosting);
   await ensureSymlink(join(workspace.root, "docs"), "../a-exp/docs", created, stagePaths, workspace.root, kit.selfHosting);
   await ensureFile(
@@ -429,6 +446,7 @@ The kit commit is recorded in \`.a-exp/kit.lock.yaml\`. If a symlink is broken, 
 
 - \`.a-exp/config.yaml\` records workspace metadata.
 - \`.a-exp/kit.lock.yaml\` records the sibling a-exp kit commit used at init time.
+- \`.vscode/\` contains VS Code settings and tasks copied from the a-exp kit templates.
 - \`AGENTS.md\` is the operating contract for agents in this project repo.
 - \`.agents/skills/\` exposes local a-exp skills from \`../a-exp\`.
 - \`docs/\` exposes schemas and conventions from \`../a-exp\`.
@@ -507,6 +525,10 @@ Use the installed \`a-exp\` CLI from this workspace:
 
 The scheduler must run without Slack tokens; Slack functions should degrade to no-ops.
 `;
+}
+
+function vscodeTemplate(name: "settings.json" | "tasks.json"): string {
+  return readFileSync(join(MODULE_DIR, "..", "templates", "vscode", name), "utf-8");
 }
 
 function defaultConfig(project: string, selfHosting: boolean): string {

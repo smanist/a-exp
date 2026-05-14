@@ -22,6 +22,27 @@ Historical research projects and heavy governance history are intentionally remo
 
 ## Log
 
+### 2026-05-14 (Added VS Code templates to init)
+
+Changed `a-exp init` to create `.vscode/settings.json` and
+`.vscode/tasks.json` in initialized workspaces when those files are missing.
+The source files live under `infra/scheduler/templates/vscode/` so updating the
+default VS Code behavior is a template replacement rather than a TypeScript
+edit.
+
+Verification:
+- `cd infra/scheduler && npm run build`: passed.
+- `cd infra/scheduler && npm test`: passed, 2 files and 25 tests.
+
+Files:
+- `README.md`
+- `infra/scheduler/README.md`
+- `infra/scheduler/src/core.test.ts`
+- `infra/scheduler/src/workspace.ts`
+- `infra/scheduler/templates/vscode/settings.json`
+- `infra/scheduler/templates/vscode/tasks.json`
+- `projects/a-exp/README.md`
+
 ### 2026-05-14 (Made status next run human-readable)
 
 Changed `a-exp status` job rows to render next run as `none`, `overdue`, or a
